@@ -1,9 +1,21 @@
 #include <string>
-#include <App.cpp>
+#include <iostream>
+#include "App.cpp"
+#include "RecipeDB.cpp"
 
 using namespace std;
 
-void main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-    string fileName = argv[1]; //main.exe file.txt에서 file.txt만 가져옴
+    if (argc < 2){
+        cout << "Please enter filePath like: main.exe file.txt" << endl; 
+        return 1;
+    }
+
+    string filePath = argv[1];
+
+    RecipeDB recipeDB(filePath);
+    App app(&recipeDB, argv[1]);
+    app.run();
+    return 0;
 }

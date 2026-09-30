@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 
 using namespace std;
@@ -10,11 +12,15 @@ class Recipe
         string* step;
     
     public:
-        string* getData();
-
         string getRecipeName();
 
-        string* getIngredent();
+        void setRecipeName(string newName);
+
+        string* getIngredient();
+
+        void setIngredient(string* newIngre);
 
         string* getStep();
+
+        void setStep(string* newStep);
 };

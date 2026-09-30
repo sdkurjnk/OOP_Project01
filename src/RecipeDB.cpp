@@ -1,25 +1,30 @@
+#pragma once
+
 #include <string>
-#include <Recipe.cpp>
+#include "Recipe.cpp"
+#include "DB.cpp"
 
 using namespace std;
 
-class RecipeDB
+class RecipeDB : public DB
 {
     private:
         Recipe* recipes;
-    
+
     public:
-        void edit(string name);
+        RecipeDB(string filePath);
 
-        Recipe* searchByName(string name);
+        Recipe* search(string name); //Overloading
 
-        Recipe* searchByName(string ingre);
+        Recipe* search(string* ingre); //Overloading
 
-        void add(string name, string* ingredent, string* step);
+        Recipe* order(int option);
+
+        void edit(string name, string newName, string* newIngredient, string* newStep);
+
+        void add(string name, string* ingredient, string* step);
 
         void del(string name);
-
-        Recipe* order(Recipe* recipe, int option);
         
-        void load(string fileName); //fileName은 임시로 string으로 둠.
+        void load(string filePath);
 };

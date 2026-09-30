@@ -8,9 +8,9 @@ class Recipe
 {
     private:
         string recipeName;
-        string* ingredent;
+        string* ingredient;
         string* step;
-    
+
     public:
         string getRecipeName();
 

@@ -5,6 +5,8 @@
 #include "DB.cpp"
 #include "Recipe.cpp"
 
+using namespace std;
+
 class App
 {
     private:

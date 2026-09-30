@@ -16,9 +16,9 @@ class DB
 
         virtual Recipe* order(int option) = 0;
 
-        virtual void edit(string name, string newName, string* newIngredent, string* newStep) = 0;
+        virtual void edit(string name, string newName, string* newIngredient, string* newStep) = 0;
 
-        virtual void add(string name, string* ingredent, string* step) = 0;
+        virtual void add(string name, string* ingredient, string* step) = 0;
 
         virtual void del(string name) = 0;
         

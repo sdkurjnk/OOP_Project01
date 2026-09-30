@@ -10,7 +10,7 @@ class RecipeDB : public DB
 {
     private:
         Recipe* recipes;
-    
+
     public:
         RecipeDB(string filePath);
 
@@ -20,9 +20,9 @@ class RecipeDB : public DB
 
         Recipe* order(int option);
 
-        void edit(string name, string newName, string* newIngredent, string* newStep);
+        void edit(string name, string newName, string* newIngredient, string* newStep);
 
-        void add(string name, string* ingredent, string* step);
+        void add(string name, string* ingredient, string* step);
 
         void del(string name);
         

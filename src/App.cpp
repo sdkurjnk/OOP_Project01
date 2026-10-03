@@ -193,6 +193,23 @@ void App::commandParser(string command){
             getline(stepReader, steps[i]);
         }
 
+        cout << "================================" << endl;
+        cout << "Name: " << argument << endl;
+
+        cout << "Ingredients: " << endl;
+
+        for (int i = 0; i < ingredientCount; i++){
+            cout << "- " << ingredients[i] << endl;
+        }
+
+        cout << "Steps: " << endl;
+
+        for (int i = 0; i < stepCount; i++){
+            cout << i + 1 << ". " << steps[i] << endl;
+        }
+
+        cout << "================================" << endl;
+
         string answer;
         bool saveRequested = false;
 

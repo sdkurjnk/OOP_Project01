@@ -155,6 +155,33 @@ void App::commandParser(string command){
             getline(stepReader, steps[i]);
         }
 
+        string answer;
+        bool saveRequested = false;
+
+        while (true){
+            cout << "이 레시피를 저장하시겠습니까? [Y/N] : ";
+
+            if (!getline(cin, answer)){
+                break;
+            }
+
+            if (answer == "Y" || answer == "y"){
+                saveRequested = true;
+                break;
+            }
+
+            if (answer == "N" || answer == "n"){
+                break;
+            }
+
+            cout << "Y 또는 N을 입력하세요." << endl;
+        }
+
+        if (saveRequested){
+            // save the recipe to the database
+            // 보류.
+        }
+
         delete[] steps;
         delete[] ingredients; 
     }

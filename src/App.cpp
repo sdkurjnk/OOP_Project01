@@ -185,4 +185,58 @@ void App::commandParser(string command){
         delete[] steps;
         delete[] ingredients; 
     }
+    else if (action == "search"){
+        string searchOption;
+        string searchKeyword;
+
+        istringstream searchStream(argument);
+        searchStream >> searchOption;
+
+        if (searchOption.empty()){
+            // 전체 조회?
+        }
+        else if (searchOption == "-name" || searchOption == "-ingre"){
+            getline(searchStream, searchKeyword);
+
+            size_t start = 0;
+
+            while (start < searchKeyword.length()){
+                if (searchKeyword[start] != ' ' && searchKeyword[start] != '\t'){
+                    break;
+                }
+
+                start++;
+            }
+
+            searchKeyword = searchKeyword.substr(start);
+
+            size_t end = searchKeyword.length();
+
+            while (end > 0){
+                if (searchKeyword[end - 1] != ' ' && searchKeyword[end - 1] != '\t'){
+                    break;
+                }
+
+                end--;
+            }
+
+            searchKeyword = searchKeyword.substr(0, end);
+
+            if (searchKeyword.empty()){
+                cout << "검색어를 입력하세요." << endl;
+                return;
+            }
+
+            size_t length = searchKeyword.length();
+
+            if (length >= 2){
+                if (searchKeyword[0] == '"' && searchKeyword[length - 1] == '"'){
+                    searchKeyword = searchKeyword.substr(1, length - 2);
+                }
+            }
+        }
+        else{
+            cout << "지원하지 않는 검색 옵션입니다."<< endl;
+        }
+    }
 }

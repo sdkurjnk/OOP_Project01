@@ -107,6 +107,13 @@ void App::commandParser(string command){
             return;
         }
 
+        if (!ingredientLine.empty()){
+            if (ingredientLine[ingredientLine.length() - 1] == ','){
+                cout << "Ingredient names cannot be empty." << endl;
+                return;
+            }
+        }
+
         istringstream ingredientStream(ingredientLine);
         string ingredient;
         int ingredientCount = 0;
@@ -150,6 +157,12 @@ void App::commandParser(string command){
                 }
 
                 ingredients[i] = ingredients[i].substr(0, end);
+
+                if (ingredients[i].empty()){
+                    cout << "Ingredient names cannot be empty." << endl;
+                    delete[] ingredients;
+                    return;
+                }
             }
 
 

@@ -94,14 +94,14 @@ void App::commandParser(string command){
 
         // when the argument is empty.
         if (argument.empty()){
-            cout << "레시피 이름을 입력하세요." << endl;
+            cout << "Please enter a recipe name." << endl;
             return;
         }
 
         // when the argument is not empty.
         string ingredientLine;
 
-        cout << "재료를 입력하세요: ";
+        cout << "Ingredients: ";
 
         if (!getline(cin, ingredientLine)){
             return;
@@ -116,7 +116,7 @@ void App::commandParser(string command){
         }
 
         if (ingredientCount == 0){
-            cout << "재료를 하나 이상 입력하세요." << endl;
+            cout << "Please enter at least one ingredient." << endl;
             return;
         }
 
@@ -132,7 +132,7 @@ void App::commandParser(string command){
         string stepLine; // save one line of the step
         int stepCount = 0; // count the number of steps
 
-        cout << "조리 과정을 입력하세요. (종료하려면 0을 입력.)" << endl;
+        cout << "Enter recipe steps (enter '0' to finish): " << endl;
 
         while (true) {
             if (!getline(cin, stepLine)) {
@@ -159,7 +159,7 @@ void App::commandParser(string command){
         bool saveRequested = false;
 
         while (true){
-            cout << "이 레시피를 저장하시겠습니까? [Y/N] : ";
+            cout << "Save this recipe? [Y/N] : ";
 
             if (!getline(cin, answer)){
                 break;
@@ -174,7 +174,7 @@ void App::commandParser(string command){
                 break;
             }
 
-            cout << "Y 또는 N을 입력하세요." << endl;
+            cout << "Please enter Y or N." << endl;
         }
 
         if (saveRequested){
@@ -225,7 +225,7 @@ void App::commandParser(string command){
             searchKeyword = searchKeyword.substr(0, end);
 
             if (searchKeyword.empty()){
-                cout << "검색어를 입력하세요." << endl;
+                cout << "Please enter a search keyword." << endl;
                 return;
             }
 
@@ -240,7 +240,7 @@ void App::commandParser(string command){
             // DB 연결 코드 들어갈 자리
         }
         else{
-            cout << "지원하지 않는 검색 옵션입니다."<< endl;
+            cout << "Unsupported search option."<< endl;
         }
     }
 
@@ -251,7 +251,7 @@ void App::commandParser(string command){
         sortStream >> sortOption;
 
         if (sortOption.empty()){
-            cout << "정렬 기준을 입력하세요." << endl;
+            cout << "Please enter a sort option." << endl;
             return;
         }
 
@@ -260,11 +260,11 @@ void App::commandParser(string command){
             // 반환된 결과 출력
         }
         else{
-            cout << "지원하지 않는 정렬 기준입니다." << endl;
+            cout << "Unsupported sort option." << endl;
         }
     }
 
     else{
-        cout << "지원하지 않는 명령어입니다." << endl;
+        cout << "Unsupported command." << endl;
     }
 }

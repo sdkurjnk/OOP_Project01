@@ -185,6 +185,7 @@ void App::commandParser(string command){
         delete[] steps;
         delete[] ingredients; 
     }
+
     else if (action == "search"){
         string searchOption;
         string searchKeyword;
@@ -194,6 +195,7 @@ void App::commandParser(string command){
 
         if (searchOption.empty()){
             // 전체 조회?
+            // DB 전체 조회 요청 및 결과 출력
         }
         else if (searchOption == "-name" || searchOption == "-ingre"){
             getline(searchStream, searchKeyword);
@@ -234,9 +236,35 @@ void App::commandParser(string command){
                     searchKeyword = searchKeyword.substr(1, length - 2);
                 }
             }
+
+            // DB 연결 코드 들어갈 자리
         }
         else{
             cout << "지원하지 않는 검색 옵션입니다."<< endl;
         }
+    }
+
+    else if (action == "sort"){
+        string sortOption;
+
+        istringstream sortStream(argument);
+        sortStream >> sortOption;
+
+        if (sortOption.empty()){
+            cout << "정렬 기준을 입력하세요." << endl;
+            return;
+        }
+
+        if (sortOption == "name"){
+            // DB에 이름 기준 정렬 요청
+            // 반환된 결과 출력
+        }
+        else{
+            cout << "지원하지 않는 정렬 기준입니다." << endl;
+        }
+    }
+
+    else{
+        cout << "지원하지 않는 명령어입니다." << endl;
     }
 }

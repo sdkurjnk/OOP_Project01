@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include "RecipeArray.cpp"
+#include "StringArray.cpp"
 #include "Recipe.cpp"
 #include "DB.cpp"
 
@@ -9,22 +11,20 @@ using namespace std;
 class RecipeDB : public DB
 {
     private:
-        Recipe* recipes;
+        RecipeArray* recipes;
+        string filePath;
 
     public:
         RecipeDB(string filePath);
+        ~RecipeDB();
 
-        Recipe* search(string name); //Overloading
+        RecipeArray* search(string name); // Overloading
+        RecipeArray* search(StringArray* ingre); // Overloading
+        RecipeArray* order(int option);
 
-        Recipe* search(string* ingre); //Overloading
-
-        Recipe* order(int option);
-
-        void edit(string name, string newName, string* newIngredient, string* newStep);
-
-        void add(string name, string* ingredient, string* step);
-
+        void edit(string name, string newName, StringArray* newIngredient, StringArray* newStep);
+        void add(string name, StringArray* ingredient, StringArray* step);
         void del(string name);
-        
-        void load(string filePath);
+
+        void load();
 };

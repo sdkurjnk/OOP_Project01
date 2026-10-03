@@ -111,7 +111,7 @@ void App::commandParser(string command){
         string ingredient;
         int ingredientCount = 0;
 
-        while (ingredientStream >> ingredient){
+        while (getline(ingredientStream, ingredient, ',')){
             ingredientCount++;
         }
 
@@ -125,8 +125,33 @@ void App::commandParser(string command){
         istringstream ingredientReader(ingredientLine);
 
         for (int i = 0; i < ingredientCount; i++){
-            ingredientReader >> ingredients[i];
-        }
+            getline(ingredientReader, ingredients[i], ',');
+
+            size_t start = 0;
+
+            while (start < ingredients[i].length()){
+                if (ingredients[i][start] != ' ' && ingredients[i][start] != '\t'){
+                    break;
+                }
+
+                start++;
+            }
+
+            ingredients[i] = ingredients[i].substr(start);
+
+            size_t end = ingredients[i].length();
+
+            while (end > 0){
+                if (ingredients[i][end - 1] != ' ' && ingredients[i][end - 1] != '\t'){
+                    break;
+                }
+
+                end--;
+                }
+
+                ingredients[i] = ingredients[i].substr(0, end);
+            }
+
 
         string stepText; // save all the steps
         string stepLine; // save one line of the step

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "StringArray.cpp"
 
 using namespace std;
 
@@ -8,19 +9,37 @@ class Recipe
 {
     private:
         string recipeName;
-        string* ingredient;
-        string* step;
+        StringArray* ingredient;
+        StringArray* step;
 
     public:
-        string getRecipeName();
+        Recipe(string name, StringArray* ingredient, StringArray* step){
+            this->recipeName = name;
+            this->ingredient = ingredient;
+            this->step = step;
+        }
 
-        void setRecipeName(string newName);
+        // Destructor
+        ~Recipe(){
+            delete this->ingredient;
+            delete this->step;
+        }
 
-        string* getIngredient();
+        string getRecipeName() {return this->recipeName;}
 
-        void setIngredient(string* newIngre);
+        void setRecipeName(string newName) {this->recipeName = newName;}
 
-        string* getStep();
+        StringArray* getIngredient() {return this->ingredient;}
 
-        void setStep(string* newStep);
+        void setIngredient(StringArray* newIngre){
+            delete this->ingredient;
+            this->ingredient = newIngre;
+        }
+
+        StringArray* getStep() {return this->step;}
+
+        void setStep(StringArray* newStep){
+            delete this->step;
+            this->step = newStep;
+        }
 };

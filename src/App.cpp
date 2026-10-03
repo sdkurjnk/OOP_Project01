@@ -5,6 +5,7 @@
 #include <sstream>
 #include "DB.cpp"
 #include "Recipe.cpp"
+#include "RecipeArray.cpp"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ class App
 
         void commandParser(string command);
 
-        void print_recipe(Recipe* recipe);
+        void print_recipe(RecipeArray* recipe);
 
     public:
         App(DB* db, string filePath);

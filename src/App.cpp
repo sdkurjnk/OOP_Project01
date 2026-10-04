@@ -375,26 +375,47 @@ private:
     void print_recipe(RecipeArray *recipe){
         for (int i = 0; i < recipe->size(); i++){
             Recipe *current = recipe->get(i);
+            StringArray lines;
 
-            cout << "===============================" << endl;
-            cout << "Recipe Name: " << current->getRecipeName() << endl;
+            lines.add("Recipe Name: " + current->getRecipeName());
+            lines.add("Ingredients:");
 
             StringArray *ingredients = current->getIngredient();
 
-            cout << "Ingredients: " << endl;
-
             for (int j = 0; j < ingredients->size(); j++){
-                cout << "- " << ingredients->get(j) << endl;
+                lines.add("- " + ingredients->get(j));
             }
 
+            lines.add("Steps:");
             StringArray *steps = current->getStep();
-            cout << "Steps: " << endl;
 
             for (int j = 0; j < steps->size(); j++){
-                cout << j + 1 << ". " << steps->get(j) << endl;
+                lines.add(to_string(j + 1) + ". " + steps->get(j));
             }
 
-            cout << "===============================" << endl;
+            size_t maxLength = 0;
+
+            for (int j = 0; j < lines.size(); j++){
+                string line = lines.get(j);
+
+                if (line.length() > maxLength){
+                    maxLength = line.length();
+                }
+            }
+
+            string border;
+
+            for (size_t j = 0; j < maxLength; j++){
+                border += "=";
+            }
+
+            cout << border << endl;
+
+            for (int j = 0; j < lines.size(); j++){
+                cout << lines.get(j) << endl;
+            }
+
+            cout << border << endl;
         }
     }
 

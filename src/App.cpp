@@ -72,6 +72,29 @@ private:
                 return;
             }
 
+            RecipeArray *existing = db->search(argument);
+
+            if (existing == 0){
+                cout << "Could not check the recipe name." << endl;
+                return;
+            }
+
+            bool duplicate = false;
+
+            for (int i = 0; i < existing->size(); i++){
+                if (existing->get(i)->getRecipeName() == argument){
+                    duplicate = true;
+                    break;
+                }
+            }
+
+            delete existing;
+
+            if (duplicate){
+                cout << "A recipe with that name already exists." << endl;
+                return;
+            }
+
             // when the argument is not empty.
             string ingredientLine;
 
@@ -148,25 +171,24 @@ private:
                 }
                 steps -> add(stepLine);
             }
+        
+            StringArray *previewIngredients = new StringArray();
+            StringArray *previewSteps = new StringArray();
 
-            cout << "================================" << endl;
-            cout << "Name: " << argument << endl;
-
-            cout << "Ingredients: " << endl;
-
-            for (int i = 0; i < ingredients->size(); i++)
-            {
-                cout << "- " << ingredients->get(i) << endl;
+            for (int i = 0; i < ingredients->size(); i++){
+                previewIngredients->add(ingredients->get(i));
             }
 
-            cout << "Steps: " << endl;
-
-            for (int i = 0; i < steps->size(); i++)
-            {
-                cout << i + 1 << ". " << steps->get(i) << endl;
+            for (int i = 0; i < steps->size(); i++){
+                previewSteps->add(steps->get(i));
             }
 
-            cout << "================================" << endl;
+            Recipe preview(argument, previewIngredients, previewSteps);
+            RecipeArray previewList;
+
+            previewList.add(&preview);
+            print_recipe(&previewList);
+            
 
             string answer;
             bool saveRequested = false;
@@ -194,14 +216,14 @@ private:
                 cout << "Please enter Y or N." << endl;
             }
 
-            if (saveRequested)
-            {
-                // save the recipe to the database
-                // 보류.
+            if (saveRequested){
+                db->add(argument, ingredients, steps);
             }
-
-            delete steps;
-            delete ingredients;
+            else{
+                delete steps;
+                delete ingredients;
+                cout << "Recipe was not saved." << endl;
+            }
         }
 
         else if (action == "search")
@@ -214,8 +236,16 @@ private:
 
             if (searchOption.empty())
             {
-                // 전체 조회?
-                // DB 전체 조회 요청 및 결과 출력
+                RecipeArray *results = db->search("");
+
+                if (results == 0){
+                    cout << "Search failed." << endl;
+                    return;
+                }
+
+                cout << "Total " << results->size() << " results:" << endl;
+                print_recipe(results);
+                delete results;
             }
             else if (searchOption == "-name" || searchOption == "-ingre")
             {
@@ -274,12 +304,13 @@ private:
                     RecipeArray *results = db->search(searchKeyword);
 
                     if (results == 0){
-                        cout << "No search results found." << endl;
+                        cout << "Search failed." << endl;
                         return;
                     }
 
                     cout << "Total " << results->size() << " results:" << endl;
                     print_recipe(results);
+                    delete results;
                 }
 
                 else if (searchOption == "-ingre"){
@@ -289,11 +320,12 @@ private:
                     RecipeArray *results = db->search(&ingredients);
 
                     if (results == 0){
-                        cout << "No search results found." << endl;
+                        cout << "Search failed." << endl;
                         return;
                     }
                     cout << "Total " << results->size() << " results:" << endl;
                     print_recipe(results);
+                    delete results;
                 }
             }
             else
@@ -317,8 +349,16 @@ private:
 
             if (sortOption == "name")
             {
-                // DB에 이름 기준 정렬 요청
-                // 반환된 결과 출력
+                RecipeArray *results = db->order(0);
+
+                if (results == 0){
+                    cout << "Sort failed." << endl;
+                    return;
+                }
+
+                cout << "Total " << results->size() << " results:" << endl;
+                print_recipe(results);
+                delete results;
             }
             else
             {

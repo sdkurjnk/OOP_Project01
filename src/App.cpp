@@ -6,6 +6,7 @@
 #include "DB.cpp"
 #include "Recipe.cpp"
 #include "RecipeArray.cpp"
+#include "StringArray.cpp"
 
 using namespace std;
 
@@ -90,94 +91,62 @@ private:
                 }
             }
 
-            istringstream ingredientStream(ingredientLine);
-            string ingredient;
-            int ingredientCount = 0;
-
-            while (getline(ingredientStream, ingredient, ','))
-            {
-                ingredientCount++;
-            }
-
-            if (ingredientCount == 0)
-            {
-                cout << "Please enter at least one ingredient." << endl;
-                return;
-            }
-
-            // allocate memory for the ingredients array.
-            string *ingredients = new string[ingredientCount];
+            StringArray *ingredients = new StringArray();
             istringstream ingredientReader(ingredientLine);
+            string ingredient;
 
-            for (int i = 0; i < ingredientCount; i++)
-            {
-                getline(ingredientReader, ingredients[i], ',');
-
+            while (getline(ingredientReader, ingredient, ',')){
                 size_t start = 0;
 
-                while (start < ingredients[i].length())
-                {
-                    if (ingredients[i][start] != ' ' && ingredients[i][start] != '\t')
-                    {
+                while (start < ingredient.length()){
+                    if (ingredient[start] != ' ' && ingredient[start] != '\t'){
                         break;
                     }
-
                     start++;
                 }
 
-                ingredients[i] = ingredients[i].substr(start);
+                ingredient = ingredient.substr(start);
+                size_t end = ingredient.length();
 
-                size_t end = ingredients[i].length();
-
-                while (end > 0)
-                {
-                    if (ingredients[i][end - 1] != ' ' && ingredients[i][end - 1] != '\t')
-                    {
+                while (end > 0){
+                    if (ingredient[end - 1] != ' ' && ingredient[end - 1] != '\t'){
                         break;
                     }
-
                     end--;
                 }
 
-                ingredients[i] = ingredients[i].substr(0, end);
+                ingredient = ingredient.substr(0, end);
 
-                if (ingredients[i].empty())
-                {
+                if (ingredient.empty()){
                     cout << "Ingredient names cannot be empty." << endl;
-                    delete[] ingredients;
+                    delete ingredients;
                     return;
                 }
+                ingredients->add(ingredient);
             }
 
-            string stepText;   // save all the steps
-            string stepLine;   // save one line of the step
-            int stepCount = 0; // count the number of steps
+            if (ingredients->size() == 0){
+                cout << "Please enter at least one ingredient." << endl;
+                delete ingredients;
+                return;
+            }
 
-            cout << "Enter recipe steps (enter '0' to finish): " << endl;
+            StringArray *steps = new StringArray();
+            string stepLine;
 
-            while (true)
-            {
-                if (!getline(cin, stepLine))
-                {
-                    delete[] ingredients;
+            cout << "Enter recipe steps (enter '0' to finish):" << endl;
+
+            while (true){
+                if (!getline(cin, stepLine)){
+                    delete steps;
+                    delete ingredients;
                     return;
                 }
 
-                if (stepLine == "0")
-                { // finish inputting steps
+                if (stepLine == "0"){
                     break;
                 }
-
-                stepText += stepLine + "\n";
-                stepCount++;
-            }
-
-            string *steps = new string[stepCount];
-            istringstream stepReader(stepText);
-
-            for (int i = 0; i < stepCount; i++)
-            {
-                getline(stepReader, steps[i]);
+                steps -> add(stepLine);
             }
 
             cout << "================================" << endl;
@@ -185,16 +154,16 @@ private:
 
             cout << "Ingredients: " << endl;
 
-            for (int i = 0; i < ingredientCount; i++)
+            for (int i = 0; i < ingredients->size(); i++)
             {
-                cout << "- " << ingredients[i] << endl;
+                cout << "- " << ingredients->get(i) << endl;
             }
 
             cout << "Steps: " << endl;
 
-            for (int i = 0; i < stepCount; i++)
+            for (int i = 0; i < steps->size(); i++)
             {
-                cout << i + 1 << ". " << steps[i] << endl;
+                cout << i + 1 << ". " << steps->get(i) << endl;
             }
 
             cout << "================================" << endl;
@@ -231,8 +200,8 @@ private:
                 // 보류.
             }
 
-            delete[] steps;
-            delete[] ingredients;
+            delete steps;
+            delete ingredients;
         }
 
         else if (action == "search")
@@ -296,7 +265,36 @@ private:
                     }
                 }
 
-                // DB 연결 코드 들어갈 자리
+                if (searchKeyword.empty()){
+                    cout << "Please enter a search keyword." << endl;
+                    return;
+                }
+
+                if (searchOption == "-name"){
+                    RecipeArray *results = db->search(searchKeyword);
+
+                    if (results == 0){
+                        cout << "No search results found." << endl;
+                        return;
+                    }
+
+                    cout << "Total " << results->size() << " results:" << endl;
+                    print_recipe(results);
+                }
+
+                else if (searchOption == "-ingre"){
+                    StringArray ingredients;
+                    ingredients.add(searchKeyword);
+
+                    RecipeArray *results = db->search(&ingredients);
+
+                    if (results == 0){
+                        cout << "No search results found." << endl;
+                        return;
+                    }
+                    cout << "Total " << results->size() << " results:" << endl;
+                    print_recipe(results);
+                }
             }
             else
             {
@@ -334,7 +332,31 @@ private:
         }
     }
 
-    void print_recipe(RecipeArray *recipe);
+    void print_recipe(RecipeArray *recipe){
+        for (int i = 0; i < recipe->size(); i++){
+            Recipe *current = recipe->get(i);
+
+            cout << "===============================" << endl;
+            cout << "Recipe Name: " << current->getRecipeName() << endl;
+
+            StringArray *ingredients = current->getIngredient();
+
+            cout << "Ingredients: " << endl;
+
+            for (int j = 0; j < ingredients->size(); j++){
+                cout << "- " << ingredients->get(j) << endl;
+            }
+
+            StringArray *steps = current->getStep();
+            cout << "Steps: " << endl;
+
+            for (int j = 0; j < steps->size(); j++){
+                cout << j + 1 << ". " << steps->get(j) << endl;
+            }
+
+            cout << "===============================" << endl;
+        }
+    }
 
 public:
     App(DB *database, string path)

@@ -52,10 +52,10 @@ class RecipeDB : public DB
             return true;
         }
 
-        void save(){
+        DBResult save(){
             ofstream out(this->filePath.c_str()); // overwrite the whole file
 
-            if (!out.is_open()) {return;}
+            if (!out.is_open()) {return DB_SAVE_FAILED;}
 
             for (int i = 0; i < this->recipes->size(); i++){
                 Recipe* r = this->recipes->get(i);
@@ -103,16 +103,17 @@ class RecipeDB : public DB
             }
 
             out.close();
+            return DB_OK;
         }
 
-        void load(){
+        DBResult load(){
             ifstream in(this->filePath.c_str());
 
             //No file: start with an empty database.
             if (!in.is_open()) {
                 cout << "INFO: There is no such file: " + this->filePath << endl;
                 cout << "Starting with empty database..." << endl;
-                return;
+                return DB_FILE_NOT_FOUND;
             }
 
             string line;
@@ -209,6 +210,7 @@ class RecipeDB : public DB
             }
 
             in.close();
+            return DB_OK;
         }
 
     public:
@@ -230,14 +232,13 @@ class RecipeDB : public DB
 
         // -------------------------------------------------------------------
         // query
-        // if input parameters is wrong, return NULL
         // -------------------------------------------------------------------
 
-        //if name key is empty string, return NULL
-        RecipeArray* search(string name){ // Overloading
+        //empty name -> Response(NULL, DB_EMPTY_NAME)
+        Response* search(string name){ // Overloading
             if (name.empty()){
                 cout << "ERROR: search keyword is empty." << endl;
-                return NULL;
+                return new Response(NULL, DB_EMPTY_NAME);
             }
 
             RecipeArray* result = new RecipeArray();
@@ -248,14 +249,14 @@ class RecipeDB : public DB
                 if (r->getRecipeName() == name) {result->add(r);}
             }
 
-            return result;
+            return new Response(result, DB_OK);
         }
 
-        //if ingre StringArray is emtpy array, return NULL
-        RecipeArray* search(StringArray* ingre){ // Overloading
+        //empty/NULL ingre -> Response(NULL, DB_NULL_ARG)
+        Response* search(StringArray* ingre){ // Overloading
             if (ingre == NULL || ingre->size() == 0){
                 cout << "ERROR: no ingredients to search." << endl;
-                return NULL;
+                return new Response(NULL, DB_NULL_ARG);
             }
 
             RecipeArray* result = new RecipeArray();
@@ -291,21 +292,21 @@ class RecipeDB : public DB
                 if (matchesAny) {result->add(r);}
             }
 
-            return result;
+            return new Response(result, DB_OK);
         }
 
-        //if option is wrong, return NULL
-        RecipeArray* order(int option){ // 0 = ascending, 1 = descending
+        //bad option -> Response(NULL, DB_BAD_OPTION)
+        Response* order(int option){ // 0 = ascending, 1 = descending
             if (option != 0 && option != 1){
                 cout << "ERROR: invalid sort option." << endl;
-                return NULL;
+                return new Response(NULL, DB_BAD_OPTION);
             }
 
             int n = this->recipes->size();
 
             RecipeArray* result = new RecipeArray();
 
-            if (n == 0) {return result;}
+            if (n == 0) {return new Response(result, DB_OK);}
 
             // sort in a temporary pointer array first
             // And then add the pointers in result in sorted order.
@@ -345,7 +346,7 @@ class RecipeDB : public DB
 
             delete[] sorted;
 
-            return result;
+            return new Response(result, DB_OK);
         }
 
         // -------------------------------------------------------------------
@@ -353,11 +354,11 @@ class RecipeDB : public DB
         // -------------------------------------------------------------------
 
         //if the parameter is null, skip that
-        int edit(string name, string newName, StringArray* newIngredient, StringArray* newStep){
+        DBResult edit(string name, string newName, StringArray* newIngre, StringArray* newStep){
             if (name.empty()){
                 cout << "ERROR: recipe name is empty." << endl;
 
-                delete newIngredient;
+                delete newIngre;
                 delete newStep;
                 return DB_EMPTY_NAME;
             }
@@ -367,7 +368,7 @@ class RecipeDB : public DB
             if (index < 0){
                 cout << "ERROR: no recipe named \"" << name << "\"." << endl;
 
-                delete newIngredient;
+                delete newIngre;
                 delete newStep;
                 return DB_NOT_FOUND;
             }
@@ -376,39 +377,36 @@ class RecipeDB : public DB
 
             if (!newName.empty()) {r->setRecipeName(newName);}
 
-            // deletes the old array, owns the new one
-            if (newIngredient != NULL) {r->setIngredient(newIngredient);}
+            //deletes the old array, owns the new one
+            if (newIngre != NULL) {r->setIngredient(newIngre);}
 
             if (newStep != NULL) {r->setStep(newStep);}
 
-            save();
-            return DB_OK;
+            return save();
         }
 
-        int add(string name, StringArray* ingredient, StringArray* step){
+        DBResult add(string name, StringArray* ingre, StringArray* step){
             if (name.empty()){
                 cout << "ERROR: invalid recipe to add." << endl;
 
-                delete ingredient;
+                delete ingre;
                 delete step;
                 return DB_EMPTY_NAME;
             }
 
-            if (ingredient == NULL || step == NULL){
+            if (ingre == NULL || step == NULL){
                 cout << "ERROR: invalid recipe to add." << endl;
 
-                delete ingredient;
+                delete ingre;
                 delete step;
                 return DB_NULL_ARG;
             }
 
-            // Recipe takes ownership of the ingredient/step arrays.
-            this->recipes->add(new Recipe(name, ingredient, step));
-            save();
-            return DB_OK;
+            this->recipes->add(new Recipe(name, ingre, step));
+            return save();
         }
 
-        int del(string name){
+        DBResult del(string name){
             if (name.empty()){
                 cout << "ERROR: recipe name is empty." << endl;
                 return DB_EMPTY_NAME;
@@ -435,7 +433,6 @@ class RecipeDB : public DB
             delete this->recipes;
             this->recipes = remaining;
 
-            save();
-            return DB_OK;
+            return save();
         }
 };

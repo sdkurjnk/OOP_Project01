@@ -111,8 +111,6 @@ class RecipeDB : public DB
 
             //No file: start with an empty database.
             if (!in.is_open()) {
-                cout << "INFO: There is no such file: " + this->filePath << endl;
-                cout << "Starting with empty database..." << endl;
                 return DB_FILE_NOT_FOUND;
             }
 
@@ -140,8 +138,6 @@ class RecipeDB : public DB
                         this->recipes->add(new Recipe(name, ingre, steps));
                     }
                     else if (hasName || ingre != NULL || steps != NULL){
-                        //card had content but no name: report and skip
-                        cout << "ERROR: skipped a card with no name." << endl;
                         delete ingre;
                         delete steps;
                     }
@@ -204,7 +200,6 @@ class RecipeDB : public DB
                 this->recipes->add(new Recipe(name, ingre, steps));
             }
             else if (hasName || ingre != NULL || steps != NULL){
-                cout << "ERROR: skipped a card with no name." << endl;
                 delete ingre;
                 delete steps;
             }
@@ -237,7 +232,6 @@ class RecipeDB : public DB
         //empty name -> Response(NULL, DB_EMPTY_NAME)
         Response* search(string name){ // Overloading
             if (name.empty()){
-                cout << "ERROR: search keyword is empty." << endl;
                 return new Response(NULL, DB_EMPTY_NAME);
             }
 
@@ -255,7 +249,6 @@ class RecipeDB : public DB
         //empty/NULL ingre -> Response(NULL, DB_NULL_ARG)
         Response* search(StringArray* ingre){ // Overloading
             if (ingre == NULL || ingre->size() == 0){
-                cout << "ERROR: no ingredients to search." << endl;
                 return new Response(NULL, DB_NULL_ARG);
             }
 
@@ -298,7 +291,6 @@ class RecipeDB : public DB
         //bad option -> Response(NULL, DB_BAD_OPTION)
         Response* order(int option){ // 0 = ascending, 1 = descending
             if (option != 0 && option != 1){
-                cout << "ERROR: invalid sort option." << endl;
                 return new Response(NULL, DB_BAD_OPTION);
             }
 
@@ -356,8 +348,6 @@ class RecipeDB : public DB
         //if the parameter is null, skip that
         DBResult edit(string name, string newName, StringArray* newIngre, StringArray* newStep){
             if (name.empty()){
-                cout << "ERROR: recipe name is empty." << endl;
-
                 delete newIngre;
                 delete newStep;
                 return DB_EMPTY_NAME;
@@ -366,8 +356,6 @@ class RecipeDB : public DB
             int index = findIndex(name);
 
             if (index < 0){
-                cout << "ERROR: no recipe named \"" << name << "\"." << endl;
-
                 delete newIngre;
                 delete newStep;
                 return DB_NOT_FOUND;
@@ -387,19 +375,22 @@ class RecipeDB : public DB
 
         DBResult add(string name, StringArray* ingre, StringArray* step){
             if (name.empty()){
-                cout << "ERROR: invalid recipe to add." << endl;
-
                 delete ingre;
                 delete step;
                 return DB_EMPTY_NAME;
             }
 
             if (ingre == NULL || step == NULL){
-                cout << "ERROR: invalid recipe to add." << endl;
-
                 delete ingre;
                 delete step;
                 return DB_NULL_ARG;
+            }
+
+            // name uniqueness is enforced here (single source of truth)
+            if (findIndex(name) >= 0){
+                delete ingre;
+                delete step;
+                return DB_DUPLICATE;
             }
 
             this->recipes->add(new Recipe(name, ingre, step));
@@ -408,14 +399,12 @@ class RecipeDB : public DB
 
         DBResult del(string name){
             if (name.empty()){
-                cout << "ERROR: recipe name is empty." << endl;
                 return DB_EMPTY_NAME;
             }
 
             int index = findIndex(name);
 
             if (index < 0){
-                cout << "ERROR: no recipe named \"" << name << "\"." << endl;
                 return DB_NOT_FOUND;
             }
 

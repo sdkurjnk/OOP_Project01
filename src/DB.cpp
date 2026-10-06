@@ -12,6 +12,7 @@ enum DBResult {
     DB_NULL_ARG,       // a required array argument was NULL
     DB_NOT_FOUND,      // no recipe matched the given name
     DB_BAD_OPTION,     // order: option was not a valid value
+    DB_DUPLICATE,      // add: a recipe with that name already exists
     DB_SAVE_FAILED,    // save: could not open the file for writing
     DB_FILE_NOT_FOUND  // load: file did not exist (started with empty DB)
 };

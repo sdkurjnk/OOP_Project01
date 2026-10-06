@@ -72,29 +72,6 @@ private:
                 return;
             }
 
-            RecipeArray *existing = db->search(argument);
-
-            if (existing == 0){
-                cout << "Could not check the recipe name." << endl;
-                return;
-            }
-
-            bool duplicate = false;
-
-            for (int i = 0; i < existing->size(); i++){
-                if (existing->get(i)->getRecipeName() == argument){
-                    duplicate = true;
-                    break;
-                }
-            }
-
-            delete existing;
-
-            if (duplicate){
-                cout << "A recipe with that name already exists." << endl;
-                return;
-            }
-
             // when the argument is not empty.
             string ingredientLine;
 
@@ -217,7 +194,18 @@ private:
             }
 
             if (saveRequested){
-                db->add(argument, ingredients, steps);
+                // db->add owns ingredients/steps from here (and frees them on failure).
+                DBResult result = db->add(argument, ingredients, steps);
+
+                if (result == DB_OK){
+                    cout << "Recipe saved." << endl;
+                }
+                else if (result == DB_DUPLICATE){
+                    cout << "A recipe with that name already exists." << endl;
+                }
+                else{
+                    cout << "Recipe was not saved." << endl;
+                }
             }
             else{
                 delete steps;
@@ -236,16 +224,8 @@ private:
 
             if (searchOption.empty())
             {
-                RecipeArray *results = db->search("");
-
-                if (results == 0){
-                    cout << "Search failed." << endl;
-                    return;
-                }
-
-                cout << "Total " << results->size() << " results:" << endl;
-                print_recipe(results);
-                delete results;
+                // No keyword: list every recipe (ordered by name ascending).
+                show_results(db->order(0), "Search failed.");
             }
             else if (searchOption == "-name" || searchOption == "-ingre")
             {
@@ -301,31 +281,14 @@ private:
                 }
 
                 if (searchOption == "-name"){
-                    RecipeArray *results = db->search(searchKeyword);
-
-                    if (results == 0){
-                        cout << "Search failed." << endl;
-                        return;
-                    }
-
-                    cout << "Total " << results->size() << " results:" << endl;
-                    print_recipe(results);
-                    delete results;
+                    show_results(db->search(searchKeyword), "Search failed.");
                 }
 
                 else if (searchOption == "-ingre"){
                     StringArray ingredients;
                     ingredients.add(searchKeyword);
 
-                    RecipeArray *results = db->search(&ingredients);
-
-                    if (results == 0){
-                        cout << "Search failed." << endl;
-                        return;
-                    }
-                    cout << "Total " << results->size() << " results:" << endl;
-                    print_recipe(results);
-                    delete results;
+                    show_results(db->search(&ingredients), "Search failed.");
                 }
             }
             else
@@ -349,16 +312,7 @@ private:
 
             if (sortOption == "name")
             {
-                RecipeArray *results = db->order(0);
-
-                if (results == 0){
-                    cout << "Sort failed." << endl;
-                    return;
-                }
-
-                cout << "Total " << results->size() << " results:" << endl;
-                print_recipe(results);
-                delete results;
+                show_results(db->order(0), "Sort failed.");
             }
             else
             {
@@ -419,10 +373,24 @@ private:
         }
     }
 
+    void show_results(Response *response, string failMessage){
+        if (response == 0 || response->getResult() != DB_OK){
+            cout << failMessage << endl;
+            delete response;
+            return;
+        }
+
+        RecipeArray *results = response->getArray();
+
+        cout << "Total " << results->size() << " results:" << endl;
+        print_recipe(results);
+        delete response;
+    }
+
 public:
-    App(DB *database, string path)
-        : filePath(path), db(database)
-    {
+    App(DB *database, string path){
+        this->filePath = path;
+        this->db = database;
     }
 
     void run()

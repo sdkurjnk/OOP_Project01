@@ -127,7 +127,7 @@ class App
 
             if (action == "insert"){
                 if (tokens->size() < 2){
-                    cout << "Please enter a recipe name." << endl;
+                    cout << "ERROR: Please enter a recipe name." << endl;
                     return;
                 }
 
@@ -141,7 +141,7 @@ class App
 
                 if (!ingredientLine.empty()){
                     if (ingredientLine[ingredientLine.length() - 1] == ','){
-                        cout << "Ingredient names cannot be empty." << endl;
+                        cout << "ERROR: Ingredient names cannot be empty." << endl;
                         return;
                     }
                 }
@@ -154,7 +154,7 @@ class App
                     ingredient = trim(ingredient);
 
                     if (ingredient.empty()){
-                        cout << "Ingredient names cannot be empty." << endl;
+                        cout << "ERROR: Ingredient names cannot be empty." << endl;
                         delete ingredients;
                         return;
                     }
@@ -163,7 +163,7 @@ class App
                 }
 
                 if (ingredients->size() == 0){
-                    cout << "Please enter at least one ingredient." << endl;
+                    cout << "ERROR: Please enter at least one ingredient." << endl;
                     delete ingredients;
                     return;
                 }
@@ -224,16 +224,16 @@ class App
                     // db->add owns ingredients/steps from here (and frees them on failure).
                     DBResult result = db->add(name, ingredients, steps);
 
-                    if (result == DB_OK) {cout << "Recipe saved." << endl;}
+                    if (result == DB_OK) {cout << "INFO: Recipe saved." << endl;}
                     else if (result == DB_DUPLICATE){
-                        cout << "A recipe with that name already exists." << endl;
+                        cout << "ERROR: A recipe with that name already exists." << endl;
                     }
-                    else {cout << "Recipe was not saved." << endl;}
+                    else {cout << "ERROR: Recipe was not saved." << endl;}
                 }
                 else{
                     delete steps;
                     delete ingredients;
-                    cout << "Recipe was not saved." << endl;
+                    cout << "INFO: Recipe was not saved." << endl;
                 }
             }
             else if (action == "search"){
@@ -247,7 +247,7 @@ class App
 
                 if (option == "-name"){
                     if (tokens->size() < 3){
-                        cout << "Please enter a search keyword." << endl;
+                        cout << "ERROR: Please enter a search keyword." << endl;
                         return;
                     }
 
@@ -255,7 +255,7 @@ class App
                 }
                 else if (option == "-ingre"){
                     if (tokens->size() < 3){
-                        cout << "Please enter a search keyword." << endl;
+                        cout << "ERROR: Please enter a search keyword." << endl;
                         return;
                     }
 
@@ -267,22 +267,22 @@ class App
 
                     show_results(db->search(&ingredients), "Search failed.");
                 }
-                else{cout << "Unsupported search option." << endl;}
+                else{cout << "ERROR: Unsupported search option." << endl;}
             }
             else if (action == "sort"){
                 if (tokens->size() < 2){
-                    cout << "Please enter a sort option." << endl;
+                    cout << "ERROR: Please enter a sort option." << endl;
                     return;
                 }
 
                 string option = tokens->get(1);
 
                 if (option == "name"){show_results(db->order(0), "Sort failed.");}
-                else{cout << "Unsupported sort option." << endl;}
+                else{cout << "ERROR: Unsupported sort option." << endl;}
             }
             else if (action == "edit"){
                 if (tokens->size() < 2){
-                    cout << "Please enter a recipe name." << endl;
+                    cout << "ERROR: Please enter a recipe name." << endl;
                     return;
                 }
 
@@ -306,7 +306,7 @@ class App
 
                 if (!trimmedIngre.empty()){
                     if (trimmedIngre[trimmedIngre.length() - 1] == ','){
-                        cout << "Ingredient names cannot be empty." << endl;
+                        cout << "ERROR: Ingredient names cannot be empty." << endl;
                         return;
                     }
 
@@ -318,7 +318,7 @@ class App
                         ingredient = trim(ingredient);
 
                         if (ingredient.empty()){
-                            cout << "Ingredient names cannot be empty." << endl;
+                            cout << "ERROR: Ingredient names cannot be empty." << endl;
                             delete newIngre;
                             return;
                         }
@@ -359,18 +359,18 @@ class App
                 // db->edit owns newIngre/newStep from here (and frees them on failure).
                 DBResult result = db->edit(name, newName, newIngre, newStep);
 
-                if (result == DB_OK) {cout << "Recipe updated." << endl;}
+                if (result == DB_OK) {cout << "INFO: Recipe updated." << endl;}
                 else if (result == DB_NOT_FOUND){
-                    cout << "No recipe with that name." << endl;
+                    cout << "ERROR: No recipe with that name." << endl;
                 }
                 else if (result == DB_EMPTY_NAME){
-                    cout << "Please enter a recipe name." << endl;
+                    cout << "ERROR: Please enter a recipe name." << endl;
                 }
-                else {cout << "Edit failed." << endl;}
+                else {cout << "ERROR: Edit failed." << endl;}
             }
             else if (action == "del"){
                 if (tokens->size() < 2){
-                    cout << "Please enter a recipe name." << endl;
+                    cout << "ERROR: Please enter a recipe name." << endl;
                     return;
                 }
 
@@ -378,32 +378,32 @@ class App
 
                 DBResult result = db->del(name);
 
-                if (result == DB_OK) {cout << "Recipe deleted." << endl;}
+                if (result == DB_OK) {cout << "INFO: Recipe deleted." << endl;}
                 else if (result == DB_NOT_FOUND){
-                    cout << "No recipe with that name." << endl;
+                    cout << "ERROR: No recipe with that name." << endl;
                 }
                 else if (result == DB_EMPTY_NAME){
-                    cout << "Please enter a recipe name." << endl;
+                    cout << "ERROR: Please enter a recipe name." << endl;
                 }
-                else {cout << "Delete failed." << endl;}
+                else {cout << "ERROR: Delete failed." << endl;}
             }
             else if (action == "load"){
                 DBResult result = db->load();
 
-                if (result == DB_OK) {cout << "Recipes loaded." << endl;}
+                if (result == DB_OK) {cout << "INFO: Recipes loaded." << endl;}
                 else if (result == DB_FILE_NOT_FOUND){
-                    cout << "No saved file to load." << endl;
+                    cout << "ERROR: No saved file to load." << endl;
                 }
-                else {cout << "Load failed." << endl;}
+                else {cout << "ERROR: Load failed." << endl;}
             }
             else if (action == "save"){
                 DBResult result = db->save();
 
-                if (result == DB_OK) {cout << "Recipes saved." << endl;}
+                if (result == DB_OK) {cout << "INFO: Recipes saved." << endl;}
                 else if (result == DB_SAVE_FAILED){
-                    cout << "Could not open the file for writing." << endl;
+                    cout << "ERROR: Could not open the file for writing." << endl;
                 }
-                else {cout << "Save failed." << endl;}
+                else {cout << "ERROR: Save failed." << endl;}
             }
             else if (action == "help"){
                 StringArray *lines = db->help();
@@ -462,7 +462,7 @@ class App
 
         void show_results(Response *response, string failMessage){
             if (response == NULL || response->getResult() != DB_OK){
-                cout << failMessage << endl;
+                cout << "ERROR: " << failMessage << endl;
                 delete response;
                 return;
             }

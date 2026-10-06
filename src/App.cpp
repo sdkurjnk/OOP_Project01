@@ -391,6 +391,29 @@ class App
 
                 string name = tokens->get(1);
 
+                string answer;
+                bool deleteRequested = false;
+
+                while (true){
+                    cout << "Delete this recipe? [Y/N] : ";
+
+                    if (!getline(cin, answer)) {return;}
+
+                    if (answer == "Y" || answer == "y"){
+                        deleteRequested = true;
+                        break;
+                    }
+
+                    if (answer == "N" || answer == "n") {break;}
+
+                    cout << "Please enter Y or N." << endl;
+                }
+
+                if (!deleteRequested){
+                    cout << "INFO: Recipe was not deleted." << endl;
+                    return;
+                }
+
                 DBResult result = db->del(name);
 
                 if (result == DB_OK) {cout << "INFO: Recipe deleted." << endl;}

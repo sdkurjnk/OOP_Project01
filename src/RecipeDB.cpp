@@ -3,8 +3,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "RecipeArray.cpp"
-#include "StringArray.cpp"
+#include "Array.cpp"
 #include "Recipe.cpp"
 #include "DB.cpp"
 

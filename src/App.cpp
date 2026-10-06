@@ -5,8 +5,7 @@
 #include <sstream>
 #include "DB.cpp"
 #include "Recipe.cpp"
-#include "RecipeArray.cpp"
-#include "StringArray.cpp"
+#include "Array.cpp"
 
 using namespace std;
 

@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string>
-#include "RecipeArray.cpp"
-#include "StringArray.cpp"
+#include "Array.cpp"
 
 using namespace std;
 

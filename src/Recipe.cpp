@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "Array.cpp"
+#include "StringArray.cpp"
 
 using namespace std;
 

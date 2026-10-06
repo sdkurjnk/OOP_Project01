@@ -45,12 +45,222 @@ class RecipeDB : public DB
         bool isBorder(string line){
             if (line.empty()) {return false;}
 
-            for (int i = 0; i < line.length(); i++){
+            for (int i = 0; i < (int)line.length(); i++){
                 if (line[i] != '=') {return false;}
             }
 
             return true;
         }
+
+    public:
+        RecipeDB(string filePath){
+            this->filePath = filePath;
+            this->recipes = new RecipeArray();
+            this->load();
+        }
+
+        ~RecipeDB(){
+            this->save();
+            // RecipeDB owns the Recipe objects, so it must delete each one.
+            for (int i = 0; i < this->recipes->size(); i++){
+                delete this->recipes->get(i);
+            }
+            // RecipeArray is non-owning: its destructor only frees the pointer array.
+            delete this->recipes;
+        }
+
+        // -------------------------------------------------------------------
+        // query
+        // -------------------------------------------------------------------
+
+        //empty name -> Response(NULL, DB_EMPTY_NAME)
+        Response* search(string name){ // Overloading
+            if (name.empty()){
+                return new Response(NULL, DB_EMPTY_NAME);
+            }
+
+            RecipeArray* result = new RecipeArray();
+
+            for (int i = 0; i < this->recipes->size(); i++){
+                Recipe* r = this->recipes->get(i);
+
+                if (r->getRecipeName() == name) {result->add(r);}
+            }
+
+            return new Response(result, DB_OK);
+        }
+
+        //empty/NULL ingre -> Response(NULL, DB_NULL_ARG)
+        Response* search(StringArray* ingre){ // Overloading
+            if (ingre == NULL || ingre->size() == 0){
+                return new Response(NULL, DB_NULL_ARG);
+            }
+
+            RecipeArray* result = new RecipeArray();
+
+            for (int i = 0; i < this->recipes->size(); i++){ //about every Recipe in RecipeDB
+                Recipe* r = this->recipes->get(i);
+                StringArray* have = r->getIngredient(); //ingredients of each Recipe instances
+
+                bool matchesAny = false;
+
+                for (int k = 0; k < have->size(); k++){ //about every ingredient the recipe has
+                    for (int j = 0; j < ingre->size(); j++){ //about every requested ingredient
+                        if (have->get(k) == ingre->get(j)){
+                            matchesAny = true;
+                            break;
+                        }
+                    }
+
+                    if (matchesAny) {break;}
+                }
+
+                if (matchesAny) {result->add(r);}
+            }
+
+            return new Response(result, DB_OK);
+        }
+
+        //bad option -> Response(NULL, DB_BAD_OPTION)
+        Response* order(int option){ // 0 = ascending, 1 = descending
+            if (option != 0 && option != 1){
+                return new Response(NULL, DB_BAD_OPTION);
+            }
+
+            int n = this->recipes->size();
+
+            RecipeArray* result = new RecipeArray();
+
+            if (n == 0) {return new Response(result, DB_OK);}
+
+            // sort in a temporary pointer array first
+            // And then add the pointers in result in sorted order.
+            Recipe** sorted = new Recipe*[n];
+
+            for (int i = 0; i < n; i++){
+                sorted[i] = this->recipes->get(i);
+            }
+
+            // selection sort by name (option 0 = ascending, option 1 = descending)
+            for (int i = 0; i < n - 1; i++){
+                int pick = i;
+
+                for (int j = i + 1; j < n; j++){
+                    bool better;
+
+                    if (option == 0){
+                        better = sorted[j]->getRecipeName() < sorted[pick]->getRecipeName();
+                    }
+                    else{
+                        better = sorted[j]->getRecipeName() > sorted[pick]->getRecipeName();
+                    }
+
+                    if (better){
+                        pick = j;
+                    }
+                }
+
+                if (pick != i){
+                    Recipe* tmp = sorted[i];
+                    sorted[i] = sorted[pick];
+                    sorted[pick] = tmp;
+                }
+            }
+
+            for (int i = 0; i < n; i++) {result->add(sorted[i]);}
+
+            delete[] sorted;
+
+            return new Response(result, DB_OK);
+        }
+
+        // -------------------------------------------------------------------
+        // mutation
+        // -------------------------------------------------------------------
+
+        //if the parameter is null, skip that
+        DBResult edit(string name, string newName, StringArray* newIngre, StringArray* newStep){
+            if (name.empty()){
+                delete newIngre;
+                delete newStep;
+                return DB_EMPTY_NAME;
+            }
+
+            int index = findIndex(name);
+
+            if (index < 0){
+                delete newIngre;
+                delete newStep;
+                return DB_NOT_FOUND;
+            }
+
+            Recipe* r = this->recipes->get(index);
+
+            if (!newName.empty()) {r->setRecipeName(newName);}
+
+            //deletes the old array, owns the new one
+            if (newIngre != NULL) {r->setIngredient(newIngre);}
+
+            if (newStep != NULL) {r->setStep(newStep);}
+
+            return save();
+        }
+
+        DBResult add(string name, StringArray* ingre, StringArray* step){
+            if (name.empty()){
+                delete ingre;
+                delete step;
+                return DB_EMPTY_NAME;
+            }
+
+            if (ingre == NULL || step == NULL){
+                delete ingre;
+                delete step;
+                return DB_NULL_ARG;
+            }
+
+            // name uniqueness is enforced here (single source of truth)
+            if (findIndex(name) >= 0){
+                delete ingre;
+                delete step;
+                return DB_DUPLICATE;
+            }
+
+            this->recipes->add(new Recipe(name, ingre, step));
+            return save();
+        }
+
+        DBResult del(string name){
+            if (name.empty()){
+                return DB_EMPTY_NAME;
+            }
+
+            int index = findIndex(name);
+
+            if (index < 0){
+                return DB_NOT_FOUND;
+            }
+
+            // Build a new array with every recipe except the deleted one,
+            // delete the removed recipe, then swap arrays.
+            RecipeArray* remaining = new RecipeArray();
+
+            for (int i = 0; i < this->recipes->size(); i++){
+                if (i == index) {delete this->recipes->get(i);}
+                else{
+                    remaining->add(this->recipes->get(i));
+                }
+            }
+
+            delete this->recipes;
+            this->recipes = remaining;
+
+            return save();
+        }
+
+        // -------------------------------------------------------------------
+        // persistence
+        // -------------------------------------------------------------------
 
         DBResult save(){
             ofstream out(this->filePath.c_str()); // overwrite the whole file
@@ -110,11 +320,12 @@ class RecipeDB : public DB
             ifstream in(this->filePath.c_str());
 
             //No file: start with an empty database.
-            if (!in.is_open()) {
-                cout << "INFO: There is no such file: " + this->filePath << endl;
-                cout << "Starting with empty database..." << endl;
-                return DB_FILE_NOT_FOUND;
-            }
+            if (!in.is_open()) {return DB_FILE_NOT_FOUND;}
+
+            //discard the current recipes before reloading.
+            for (int i = 0; i < this->recipes->size(); i++) {delete this->recipes->get(i);}
+            delete this->recipes;
+            this->recipes = new RecipeArray();
 
             string line;
 
@@ -140,8 +351,6 @@ class RecipeDB : public DB
                         this->recipes->add(new Recipe(name, ingre, steps));
                     }
                     else if (hasName || ingre != NULL || steps != NULL){
-                        //card had content but no name: report and skip
-                        cout << "ERROR: skipped a card with no name." << endl;
                         delete ingre;
                         delete steps;
                     }
@@ -168,14 +377,14 @@ class RecipeDB : public DB
                         int next = rest.find(", ", pos);
                         string token;
 
-                        if (next == string::npos) {token = rest.substr(pos);}
+                        if (next == (int)string::npos) {token = rest.substr(pos);}
                         else{
                             token = rest.substr(pos, next - pos);
                         }
 
                         if (!token.empty()) {ingre->add(token);}
 
-                        if (next == string::npos) {break;}
+                        if (next == (int)string::npos) {break;}
 
                         pos = next + 2;
                     }
@@ -189,7 +398,7 @@ class RecipeDB : public DB
 
                     int p = line.find(": ");
 
-                    if (p == string::npos) {steps->add(line);}
+                    if (p == (int)string::npos) {steps->add(line);}
                     else{
                         steps->add(line.substr(p + 2));
                     }
@@ -204,235 +413,11 @@ class RecipeDB : public DB
                 this->recipes->add(new Recipe(name, ingre, steps));
             }
             else if (hasName || ingre != NULL || steps != NULL){
-                cout << "ERROR: skipped a card with no name." << endl;
                 delete ingre;
                 delete steps;
             }
 
             in.close();
             return DB_OK;
-        }
-
-    public:
-        RecipeDB(string filePath){
-            this->filePath = filePath;
-            this->recipes = new RecipeArray();
-            this->load();
-        }
-
-        ~RecipeDB(){
-            this->save();
-            // RecipeDB owns the Recipe objects, so it must delete each one.
-            for (int i = 0; i < this->recipes->size(); i++){
-                delete this->recipes->get(i);
-            }
-            // RecipeArray is non-owning: its destructor only frees the pointer array.
-            delete this->recipes;
-        }
-
-        // -------------------------------------------------------------------
-        // query
-        // -------------------------------------------------------------------
-
-        //empty name -> Response(NULL, DB_EMPTY_NAME)
-        Response* search(string name){ // Overloading
-            if (name.empty()){
-                cout << "ERROR: search keyword is empty." << endl;
-                return new Response(NULL, DB_EMPTY_NAME);
-            }
-
-            RecipeArray* result = new RecipeArray();
-
-            for (int i = 0; i < this->recipes->size(); i++){
-                Recipe* r = this->recipes->get(i);
-
-                if (r->getRecipeName() == name) {result->add(r);}
-            }
-
-            return new Response(result, DB_OK);
-        }
-
-        //empty/NULL ingre -> Response(NULL, DB_NULL_ARG)
-        Response* search(StringArray* ingre){ // Overloading
-            if (ingre == NULL || ingre->size() == 0){
-                cout << "ERROR: no ingredients to search." << endl;
-                return new Response(NULL, DB_NULL_ARG);
-            }
-
-            RecipeArray* result = new RecipeArray();
-
-            for (int i = 0; i < this->recipes->size(); i++){ //about every Recipe in RecipeDB
-                Recipe* r = this->recipes->get(i);
-                StringArray* have = r->getIngredient(); //ingredients of each Recipe instances
-
-                // --- OR: match if the recipe has at least one requested ingredient ---
-                // (AND version — match only if the recipe has every requested ingredient:
-                //  bool matchesAll = true;
-                //  for (int j = 0; j < ingre->size(); j++){
-                //      bool found = false;
-                //      for (int k = 0; k < have->size(); k++){
-                //          if (have->get(k) == ingre->get(j)){ found = true; break; }
-                //      }
-                //      if (!found){ matchesAll = false; break; }
-                //  }
-                //  if (matchesAll) {result->add(r);}  )
-                bool matchesAny = false;
-
-                for (int k = 0; k < have->size(); k++){ //about every ingredient the recipe has
-                    for (int j = 0; j < ingre->size(); j++){ //about every requested ingredient
-                        if (have->get(k) == ingre->get(j)){
-                            matchesAny = true;
-                            break;
-                        }
-                    }
-
-                    if (matchesAny) {break;}
-                }
-
-                if (matchesAny) {result->add(r);}
-            }
-
-            return new Response(result, DB_OK);
-        }
-
-        //bad option -> Response(NULL, DB_BAD_OPTION)
-        Response* order(int option){ // 0 = ascending, 1 = descending
-            if (option != 0 && option != 1){
-                cout << "ERROR: invalid sort option." << endl;
-                return new Response(NULL, DB_BAD_OPTION);
-            }
-
-            int n = this->recipes->size();
-
-            RecipeArray* result = new RecipeArray();
-
-            if (n == 0) {return new Response(result, DB_OK);}
-
-            // sort in a temporary pointer array first
-            // And then add the pointers in result in sorted order.
-            Recipe** sorted = new Recipe*[n];
-
-            for (int i = 0; i < n; i++){
-                sorted[i] = this->recipes->get(i);
-            }
-
-            // selection sort by name (option 0 = ascending, option 1 = descending)
-            for (int i = 0; i < n - 1; i++){
-                int pick = i;
-
-                for (int j = i + 1; j < n; j++){
-                    bool better;
-
-                    if (option == 0){
-                        better = sorted[j]->getRecipeName() < sorted[pick]->getRecipeName();
-                    }
-                    else{
-                        better = sorted[j]->getRecipeName() > sorted[pick]->getRecipeName();
-                    }
-
-                    if (better){
-                        pick = j;
-                    }
-                }
-
-                if (pick != i){
-                    Recipe* tmp = sorted[i];
-                    sorted[i] = sorted[pick];
-                    sorted[pick] = tmp;
-                }
-            }
-
-            for (int i = 0; i < n; i++) {result->add(sorted[i]);}
-
-            delete[] sorted;
-
-            return new Response(result, DB_OK);
-        }
-
-        // -------------------------------------------------------------------
-        // mutation
-        // -------------------------------------------------------------------
-
-        //if the parameter is null, skip that
-        DBResult edit(string name, string newName, StringArray* newIngre, StringArray* newStep){
-            if (name.empty()){
-                cout << "ERROR: recipe name is empty." << endl;
-
-                delete newIngre;
-                delete newStep;
-                return DB_EMPTY_NAME;
-            }
-
-            int index = findIndex(name);
-
-            if (index < 0){
-                cout << "ERROR: no recipe named \"" << name << "\"." << endl;
-
-                delete newIngre;
-                delete newStep;
-                return DB_NOT_FOUND;
-            }
-
-            Recipe* r = this->recipes->get(index);
-
-            if (!newName.empty()) {r->setRecipeName(newName);}
-
-            //deletes the old array, owns the new one
-            if (newIngre != NULL) {r->setIngredient(newIngre);}
-
-            if (newStep != NULL) {r->setStep(newStep);}
-
-            return save();
-        }
-
-        DBResult add(string name, StringArray* ingre, StringArray* step){
-            if (name.empty()){
-                cout << "ERROR: invalid recipe to add." << endl;
-
-                delete ingre;
-                delete step;
-                return DB_EMPTY_NAME;
-            }
-
-            if (ingre == NULL || step == NULL){
-                cout << "ERROR: invalid recipe to add." << endl;
-
-                delete ingre;
-                delete step;
-                return DB_NULL_ARG;
-            }
-
-            this->recipes->add(new Recipe(name, ingre, step));
-            return save();
-        }
-
-        DBResult del(string name){
-            if (name.empty()){
-                cout << "ERROR: recipe name is empty." << endl;
-                return DB_EMPTY_NAME;
-            }
-
-            int index = findIndex(name);
-
-            if (index < 0){
-                cout << "ERROR: no recipe named \"" << name << "\"." << endl;
-                return DB_NOT_FOUND;
-            }
-
-            // Build a new array with every recipe except the deleted one,
-            // delete the removed recipe, then swap arrays.
-            RecipeArray* remaining = new RecipeArray();
-
-            for (int i = 0; i < this->recipes->size(); i++){
-                if (i == index) {delete this->recipes->get(i);}
-                else{
-                    remaining->add(this->recipes->get(i));
-                }
-            }
-
-            delete this->recipes;
-            this->recipes = remaining;
-
-            return save();
         }
 };

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 
 using namespace std;
@@ -34,10 +33,7 @@ class StringArray
         int size() {return this->count;}
 
         string get(int index){
-            if (index < 0 || index >= this->count) {
-                cout << "ERROR: index of StringArray should be in 0 to arraysize-1." <<endl;
-                return "";
-            }
+            if (index < 0 || index >= this->count) {return "";}
             return this->str[index];
         }
 };

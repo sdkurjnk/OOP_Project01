@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdlib.h>
-#include <iostream>
 #include "Recipe.cpp"
 
 using namespace std;
@@ -18,21 +16,22 @@ class RecipeArray
             this->count = 0;
         }
 
-        ~RecipeArray() {free(this->recipe);} //deallocate only array of Recipe instances
+        ~RecipeArray() {delete[] this->recipe;} //deallocate only array of Recipe pointers, not the Recipe instances
 
         void add(Recipe* item){
-            this->recipe = (Recipe**)realloc(this->recipe, sizeof(Recipe*) * (this->count + 1));
-            this->recipe[this->count] = item;
+            Recipe** newArray = new Recipe*[this->count + 1];
+            for (int i = 0; i < this->count; i++) {newArray[i] = this->recipe[i];}
+            newArray[this->count] = item;
+
+            delete[] this->recipe;
+            this->recipe = newArray;
             this->count = this->count + 1;
         }
 
         int size() {return this->count;}
 
         Recipe* get(int index){
-            if (index < 0 || index >= this->count) {
-                cout << "ERROR: index of RecipeArray should be in 0 to arraysize-1." <<endl;
-                return NULL;
-            }
+            if (index < 0 || index >= this->count) {return NULL;}
             return this->recipe[index];
         }
 };

@@ -420,23 +420,4 @@ class RecipeDB : public DB
             in.close();
             return DB_OK;
         }
-
-        StringArray* help(){
-            StringArray* lines = new StringArray();
-
-            lines->add("Commands:");
-            lines->add("  insert <name>            add a recipe (prompts for ingredients and steps)");
-            lines->add("  edit <name>              edit a recipe (empty input keeps a field)");
-            lines->add("  del <name>               delete a recipe");
-            lines->add("  search                   list every recipe");
-            lines->add("  search -name <keyword>   search recipes by name");
-            lines->add("  search -ingre a, b, c    search recipes by ingredient");
-            lines->add("  sort name [asc|desc]     list recipes sorted by name");
-            lines->add("  load                     reload recipes from the file");
-            lines->add("  save                     save recipes to the file");
-            lines->add("  help                     show this help");
-            lines->add("  exit                     quit");
-
-            return lines;
-        }
 };

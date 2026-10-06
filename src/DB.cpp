@@ -49,6 +49,4 @@ class DB
         virtual DBResult del(string name) = 0;
         virtual DBResult save() = 0;
         virtual DBResult load() = 0;
-
-        virtual StringArray* help() = 0;
 };

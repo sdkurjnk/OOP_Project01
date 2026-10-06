@@ -444,13 +444,18 @@ class App
                 else {cout << "ERROR: Save failed." << endl;}
             }
             else if (action == "help"){
-                StringArray *lines = db->help();
-
-                for (int i = 0; i < lines->size(); i++){
-                    cout << lines->get(i) << endl;
-                }
-
-                delete lines;
+                cout << "Commands:" << endl;
+                cout << "  insert <name>            add a recipe (prompts for ingredients and steps)" << endl;
+                cout << "  edit <name>              edit a recipe (empty input keeps a field)" << endl;
+                cout << "  del <name>               delete a recipe" << endl;
+                cout << "  search                   list every recipe" << endl;
+                cout << "  search -name <keyword>   search recipes by name" << endl;
+                cout << "  search -ingre a, b, c    search recipes by ingredient" << endl;
+                cout << "  sort name [asc|desc]     list recipes sorted by name" << endl;
+                cout << "  load                     reload recipes from the file" << endl;
+                cout << "  save                     save recipes to the file" << endl;
+                cout << "  help                     show this help" << endl;
+                cout << "  exit                     quit" << endl;
             }
             else {cout << "ERROR: Unsupported command." << endl;}}
 

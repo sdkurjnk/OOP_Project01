@@ -13,7 +13,6 @@ using namespace std;
 class App
 {
     private:
-        string filePath;
         DB *db;
 
         string trim(string s){
@@ -48,14 +47,6 @@ class App
             return s;
         }
 
-        // Tokenize a command line into [action, (option), argument(s)...].
-        // Grammar:
-        //   insert <name>           -> [ "insert", name ]
-        //   sort <option>           -> [ "sort", option ]
-        //   search                  -> [ "search" ]
-        //   search -name <keyword>  -> [ "search", "-name", keyword ]
-        //   search -ingre a, b, c   -> [ "search", "-ingre", "a", "b", "c" ]
-        // The returned StringArray is owned by the caller (run()).
         StringArray* commandParser(string command){
             StringArray *tokens = new StringArray();
 
@@ -79,12 +70,19 @@ class App
                 if (!name.empty()) {tokens->add(name);}
             }
             else if (action == "sort"){
-                // Only the next word matters.
+                // sort <key> [asc|desc]
                 istringstream sortStream(rest);
-                string option;
-                sortStream >> option;
+                string key;
+                sortStream >> key;
 
-                if (!option.empty()) {tokens->add(option);}
+                if (!key.empty()){
+                    tokens->add(key);
+
+                    string direction;
+                    sortStream >> direction;
+
+                    if (!direction.empty()) {tokens->add(direction);}
+                }
             }
             else if (action == "search") {
                 istringstream searchStream(rest);
@@ -275,10 +273,27 @@ class App
                     return;
                 }
 
-                string option = tokens->get(1);
+                string key = tokens->get(1);
 
-                if (option == "name"){show_results(db->order(0), "Sort failed.");}
-                else{cout << "ERROR: Unsupported sort option." << endl;}
+                if (key != "name"){
+                    cout << "ERROR: Unsupported sort option." << endl;
+                    return;
+                }
+
+                int option = 0; // ascending by default
+
+                if (tokens->size() >= 3){
+                    string direction = tokens->get(2);
+
+                    if (direction == "desc") {option = 1;}
+                    else if (direction == "asc") {option = 0;}
+                    else{
+                        cout << "ERROR: Unsupported sort option." << endl;
+                        return;
+                    }
+                }
+
+                show_results(db->order(option), "Sort failed.");
             }
             else if (action == "edit"){
                 if (tokens->size() < 2){
@@ -475,8 +490,7 @@ class App
         }
 
     public:
-        App(DB *database, string path){
-            this->filePath = path;
+        App(DB *database){
             this->db = database;
         }
 

@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
     string filePath = argv[1];
 
     RecipeDB recipeDB(filePath);
-    App app(&recipeDB, argv[1]);
+    App app(&recipeDB);
     app.run();
     return 0;
 }

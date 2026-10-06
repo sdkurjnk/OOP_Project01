@@ -431,7 +431,7 @@ class RecipeDB : public DB
             lines->add("  search                   list every recipe");
             lines->add("  search -name <keyword>   search recipes by name");
             lines->add("  search -ingre a, b, c    search recipes by ingredient");
-            lines->add("  sort name                list recipes sorted by name");
+            lines->add("  sort name [asc|desc]     list recipes sorted by name");
             lines->add("  load                     reload recipes from the file");
             lines->add("  save                     save recipes to the file");
             lines->add("  help                     show this help");

@@ -537,7 +537,9 @@ class App
     public:
         App(DB *database){
             this->db = database;
+        }
 
+        void run(){
             cout << " ___   ___   _  __  _   _ " << endl;
             cout << "|_ _| |_ _| | |/ / | | | |" << endl;
             cout << " | |   | |  | ' /  | |_| |" << endl;
@@ -547,9 +549,7 @@ class App
             cout << "The Interactive Intelligent Kitchen Helper" << endl;
             cout << "Enter 'help' to see the commands." << endl;
             cout << endl;
-        }
 
-        void run(){
             string command;
 
             while (true){

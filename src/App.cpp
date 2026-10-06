@@ -16,30 +16,21 @@ class App
         string filePath;
         DB *db;
 
-        string trim(string s)
-        {
-            size_t start = 0;
+        string trim(string s){
+            int start = 0;
 
-            while (start < s.length())
-            {
-                if (s[start] != ' ' && s[start] != '\t')
-                {
-                    break;
-                }
+            while (start < (int)s.length()){
+                if (s[start] != ' ' && s[start] != '\t') {break;}
 
                 start++;
             }
 
             s = s.substr(start);
 
-            size_t end = s.length();
+            int end = s.length();
 
-            while (end > 0)
-            {
-                if (s[end - 1] != ' ' && s[end - 1] != '\t')
-                {
-                    break;
-                }
+            while (end > 0){
+                if (s[end - 1] != ' ' && s[end - 1] != '\t') {break;}
 
                 end--;
             }
@@ -47,9 +38,8 @@ class App
             return s.substr(0, end);
         }
 
-        string stripQuotes(string s)
-        {
-            size_t length = s.length();
+        string stripQuotes(string s){
+            int length = s.length();
 
             if (length >= 2 && s[0] == '"' && s[length - 1] == '"'){
                 return s.substr(1, length - 2);
@@ -72,9 +62,9 @@ class App
             string action;
             string rest;
 
-            size_t pos = command.find(' ');
+            int pos = command.find(' ');
 
-            if (pos == string::npos) {action = command;}
+            if (pos == (int)string::npos) {action = command;}
             else{
                 action = command.substr(0, pos);
                 rest = command.substr(pos + 1);
@@ -82,7 +72,7 @@ class App
 
             tokens->add(action);
 
-            if (action == "insert"){
+            if (action == "insert" || action == "edit" || action == "del"){
                 // The whole remainder is the recipe name (spaces allowed).
                 string name = trim(rest);
 
@@ -290,6 +280,113 @@ class App
                 if (option == "name"){show_results(db->order(0), "Sort failed.");}
                 else{cout << "Unsupported sort option." << endl;}
             }
+            else if (action == "edit"){
+                if (tokens->size() < 2){
+                    cout << "Please enter a recipe name." << endl;
+                    return;
+                }
+
+                string name = tokens->get(1);
+
+                // Empty input keeps the current field.
+                cout << "New name (leave empty to keep): ";
+                string newName;
+
+                if (!getline(cin, newName)) {return;}
+
+                newName = trim(newName);
+
+                cout << "New ingredients (comma-separated, leave empty to keep): ";
+                string ingredientLine;
+
+                if (!getline(cin, ingredientLine)) {return;}
+
+                StringArray *newIngre = NULL;
+                string trimmedIngre = trim(ingredientLine);
+
+                if (!trimmedIngre.empty()){
+                    if (trimmedIngre[trimmedIngre.length() - 1] == ','){
+                        cout << "Ingredient names cannot be empty." << endl;
+                        return;
+                    }
+
+                    newIngre = new StringArray();
+                    istringstream ingredientReader(ingredientLine);
+                    string ingredient;
+
+                    while (getline(ingredientReader, ingredient, ',')){
+                        ingredient = trim(ingredient);
+
+                        if (ingredient.empty()){
+                            cout << "Ingredient names cannot be empty." << endl;
+                            delete newIngre;
+                            return;
+                        }
+
+                        newIngre->add(ingredient);
+                    }
+                }
+
+                StringArray *newStep = NULL;
+                string answer;
+
+                cout << "Replace steps? [Y/N] : ";
+
+                if (!getline(cin, answer)){
+                    delete newIngre;
+                    return;
+                }
+
+                if (answer == "Y" || answer == "y"){
+                    newStep = new StringArray();
+                    string stepLine;
+
+                    cout << "Enter recipe steps (enter '0' to finish):" << endl;
+
+                    while (true){
+                        if (!getline(cin, stepLine)){
+                            delete newStep;
+                            delete newIngre;
+                            return;
+                        }
+
+                        if (stepLine == "0") {break;}
+
+                        newStep->add(stepLine);
+                    }
+                }
+
+                // db->edit owns newIngre/newStep from here (and frees them on failure).
+                DBResult result = db->edit(name, newName, newIngre, newStep);
+
+                if (result == DB_OK) {cout << "Recipe updated." << endl;}
+                else if (result == DB_NOT_FOUND){
+                    cout << "No recipe with that name." << endl;
+                }
+                else if (result == DB_EMPTY_NAME){
+                    cout << "Please enter a recipe name." << endl;
+                }
+                else {cout << "Edit failed." << endl;}
+            }
+            else if (action == "del"){
+                if (tokens->size() < 2){
+                    cout << "Please enter a recipe name." << endl;
+                    return;
+                }
+
+                string name = tokens->get(1);
+
+                DBResult result = db->del(name);
+
+                if (result == DB_OK) {cout << "Recipe deleted." << endl;}
+                else if (result == DB_NOT_FOUND){
+                    cout << "No recipe with that name." << endl;
+                }
+                else if (result == DB_EMPTY_NAME){
+                    cout << "Please enter a recipe name." << endl;
+                }
+                else {cout << "Delete failed." << endl;}
+            }
             else {cout << "ERROR: Unsupported command." << endl;}}
 
         void print_recipe(RecipeArray *recipe){
@@ -316,17 +413,17 @@ class App
                     lines.add(to_string(j + 1) + ". " + steps->get(j));
                 }
 
-                size_t maxLength = 0;
+                int maxLength = 0;
 
                 for (int j = 0; j < lines.size(); j++){
                     string line = lines.get(j);
 
-                    if (line.length() > maxLength) {maxLength = line.length();}
+                    if ((int)line.length() > maxLength) {maxLength = line.length();}
                 }
 
                 string border;
 
-                for (size_t j = 0; j < maxLength; j++) {border += "=";}
+                for (int j = 0; j < maxLength; j++) {border += "=";}
 
                 cout << border << endl;
 
@@ -337,7 +434,7 @@ class App
         }
 
         void show_results(Response *response, string failMessage){
-            if (response == 0 || response->getResult() != DB_OK){
+            if (response == NULL || response->getResult() != DB_OK){
                 cout << failMessage << endl;
                 delete response;
                 return;

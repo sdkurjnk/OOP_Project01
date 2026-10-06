@@ -47,4 +47,8 @@ class DB
         virtual DBResult edit(string name, string newName, StringArray* newIngre, StringArray* newStep) = 0;
         virtual DBResult add(string name, StringArray* ingre, StringArray* step) = 0;
         virtual DBResult del(string name) = 0;
+        virtual DBResult save() = 0;
+        virtual DBResult load() = 0;
+
+        virtual StringArray* help() = 0;
 };

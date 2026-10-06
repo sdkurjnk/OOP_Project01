@@ -387,6 +387,33 @@ class App
                 }
                 else {cout << "Delete failed." << endl;}
             }
+            else if (action == "load"){
+                DBResult result = db->load();
+
+                if (result == DB_OK) {cout << "Recipes loaded." << endl;}
+                else if (result == DB_FILE_NOT_FOUND){
+                    cout << "No saved file to load." << endl;
+                }
+                else {cout << "Load failed." << endl;}
+            }
+            else if (action == "save"){
+                DBResult result = db->save();
+
+                if (result == DB_OK) {cout << "Recipes saved." << endl;}
+                else if (result == DB_SAVE_FAILED){
+                    cout << "Could not open the file for writing." << endl;
+                }
+                else {cout << "Save failed." << endl;}
+            }
+            else if (action == "help"){
+                StringArray *lines = db->help();
+
+                for (int i = 0; i < lines->size(); i++){
+                    cout << lines->get(i) << endl;
+                }
+
+                delete lines;
+            }
             else {cout << "ERROR: Unsupported command." << endl;}}
 
         void print_recipe(RecipeArray *recipe){

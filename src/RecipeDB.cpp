@@ -45,167 +45,11 @@ class RecipeDB : public DB
         bool isBorder(string line){
             if (line.empty()) {return false;}
 
-            for (int i = 0; i < line.length(); i++){
+            for (int i = 0; i < (int)line.length(); i++){
                 if (line[i] != '=') {return false;}
             }
 
             return true;
-        }
-
-        DBResult save(){
-            ofstream out(this->filePath.c_str()); // overwrite the whole file
-
-            if (!out.is_open()) {return DB_SAVE_FAILED;}
-
-            for (int i = 0; i < this->recipes->size(); i++){
-                Recipe* r = this->recipes->get(i);
-
-                StringArray* ingre = r->getIngredient();
-                StringArray* step = r->getStep();
-
-                //1. make every line as string
-                //layout: [0] name, [1] ingredient, [2] "Step:", [3..] step lines
-                int lineCount = 3 + step->size();
-                string* lines = new string[lineCount];
-
-                lines[0] = "Name: " + r->getRecipeName();
-
-                string ingreLine = "Ingredient: ";
-                for (int j = 0; j < ingre->size(); j++){
-                    if (j > 0) {ingreLine += ", ";}
-                    ingreLine += ingre->get(j);
-                }
-                lines[1] = ingreLine;
-
-                lines[2] = "Step:";
-
-                for (int j = 0; j < step->size(); j++){
-                    lines[3 + j] = pad2(j + 1) + ": " + step->get(j);
-                }
-
-                //2. border width = max length among the card lines
-                int width = 0;
-
-                for (int j = 0; j < lineCount; j++){
-                    if ((int)lines[j].length() > width) {width = (int)lines[j].length();}
-                }
-
-                string bar = makeBorder(width);
-
-                //3. write
-                out << bar << "\n";
-
-                for (int j = 0; j < lineCount; j++) {out << lines[j] << "\n";}
-
-                out << bar << "\n";
-
-                delete[] lines;
-            }
-
-            out.close();
-            return DB_OK;
-        }
-
-        DBResult load(){
-            ifstream in(this->filePath.c_str());
-
-            //No file: start with an empty database.
-            if (!in.is_open()) {
-                return DB_FILE_NOT_FOUND;
-            }
-
-            string line;
-
-            //Fields of the card
-            string name = "";
-            bool hasName = false;
-            StringArray* ingre = NULL;
-            StringArray* steps = NULL;
-
-            while (getline(in, line)){
-                if (!line.empty() && line[line.length() - 1] == '\r'){
-                    line = line.substr(0, line.length() - 1);
-                }
-
-                //blank lines carry no data - skip
-                if (line.empty()) {continue;}
-
-                if (isBorder(line)){ //making card and store to this->recipes
-                    if (!name.empty()){
-                        if (ingre == NULL) {ingre = new StringArray();}
-                        if (steps == NULL) {steps = new StringArray();}
-
-                        this->recipes->add(new Recipe(name, ingre, steps));
-                    }
-                    else if (hasName || ingre != NULL || steps != NULL){
-                        delete ingre;
-                        delete steps;
-                    }
-
-                    //reset for the next card
-                    name = "";
-                    hasName = false;
-                    ingre = NULL;
-                    steps = NULL;
-                    continue;
-                }
-
-                if (line.compare(0, 6, "Name: ") == 0){ //name field
-                    name = line.substr(6);
-                    hasName = true;
-                }
-                else if (line.compare(0, 12, "Ingredient: ") == 0){ //ingredient field
-                    if (ingre == NULL) {ingre = new StringArray();}
-
-                    string rest = line.substr(12);
-                    int pos = 0;
-
-                    while (true){
-                        int next = rest.find(", ", pos);
-                        string token;
-
-                        if (next == string::npos) {token = rest.substr(pos);}
-                        else{
-                            token = rest.substr(pos, next - pos);
-                        }
-
-                        if (!token.empty()) {ingre->add(token);}
-
-                        if (next == string::npos) {break;}
-
-                        pos = next + 2;
-                    }
-                }
-                else if (line == "Step:"){ //step field - but only "Step: "
-                    if (steps == NULL) {steps = new StringArray();}
-                }
-                else{
-                    //real step line: "NN: <text>"
-                    if (steps == NULL) {steps = new StringArray();}
-
-                    int p = line.find(": ");
-
-                    if (p == string::npos) {steps->add(line);}
-                    else{
-                        steps->add(line.substr(p + 2));
-                    }
-                }
-            }
-
-            //In case the file does not end with a border, finalize the last card.
-            if (!name.empty()){
-                if (ingre == NULL) {ingre = new StringArray();}
-                if (steps == NULL) {steps = new StringArray();}
-
-                this->recipes->add(new Recipe(name, ingre, steps));
-            }
-            else if (hasName || ingre != NULL || steps != NULL){
-                delete ingre;
-                delete steps;
-            }
-
-            in.close();
-            return DB_OK;
         }
 
     public:
@@ -258,17 +102,6 @@ class RecipeDB : public DB
                 Recipe* r = this->recipes->get(i);
                 StringArray* have = r->getIngredient(); //ingredients of each Recipe instances
 
-                // --- OR: match if the recipe has at least one requested ingredient ---
-                // (AND version — match only if the recipe has every requested ingredient:
-                //  bool matchesAll = true;
-                //  for (int j = 0; j < ingre->size(); j++){
-                //      bool found = false;
-                //      for (int k = 0; k < have->size(); k++){
-                //          if (have->get(k) == ingre->get(j)){ found = true; break; }
-                //      }
-                //      if (!found){ matchesAll = false; break; }
-                //  }
-                //  if (matchesAll) {result->add(r);}  )
                 bool matchesAny = false;
 
                 for (int k = 0; k < have->size(); k++){ //about every ingredient the recipe has
@@ -423,5 +256,187 @@ class RecipeDB : public DB
             this->recipes = remaining;
 
             return save();
+        }
+
+        // -------------------------------------------------------------------
+        // persistence
+        // -------------------------------------------------------------------
+
+        DBResult save(){
+            ofstream out(this->filePath.c_str()); // overwrite the whole file
+
+            if (!out.is_open()) {return DB_SAVE_FAILED;}
+
+            for (int i = 0; i < this->recipes->size(); i++){
+                Recipe* r = this->recipes->get(i);
+
+                StringArray* ingre = r->getIngredient();
+                StringArray* step = r->getStep();
+
+                //1. make every line as string
+                //layout: [0] name, [1] ingredient, [2] "Step:", [3..] step lines
+                int lineCount = 3 + step->size();
+                string* lines = new string[lineCount];
+
+                lines[0] = "Name: " + r->getRecipeName();
+
+                string ingreLine = "Ingredient: ";
+                for (int j = 0; j < ingre->size(); j++){
+                    if (j > 0) {ingreLine += ", ";}
+                    ingreLine += ingre->get(j);
+                }
+                lines[1] = ingreLine;
+
+                lines[2] = "Step:";
+
+                for (int j = 0; j < step->size(); j++){
+                    lines[3 + j] = pad2(j + 1) + ": " + step->get(j);
+                }
+
+                //2. border width = max length among the card lines
+                int width = 0;
+
+                for (int j = 0; j < lineCount; j++){
+                    if ((int)lines[j].length() > width) {width = (int)lines[j].length();}
+                }
+
+                string bar = makeBorder(width);
+
+                //3. write
+                out << bar << "\n";
+
+                for (int j = 0; j < lineCount; j++) {out << lines[j] << "\n";}
+
+                out << bar << "\n";
+
+                delete[] lines;
+            }
+
+            out.close();
+            return DB_OK;
+        }
+
+        DBResult load(){
+            ifstream in(this->filePath.c_str());
+
+            //No file: start with an empty database.
+            if (!in.is_open()) {return DB_FILE_NOT_FOUND;}
+
+            //discard the current recipes before reloading.
+            for (int i = 0; i < this->recipes->size(); i++) {delete this->recipes->get(i);}
+            delete this->recipes;
+            this->recipes = new RecipeArray();
+
+            string line;
+
+            //Fields of the card
+            string name = "";
+            bool hasName = false;
+            StringArray* ingre = NULL;
+            StringArray* steps = NULL;
+
+            while (getline(in, line)){
+                if (!line.empty() && line[line.length() - 1] == '\r'){
+                    line = line.substr(0, line.length() - 1);
+                }
+
+                //blank lines carry no data - skip
+                if (line.empty()) {continue;}
+
+                if (isBorder(line)){ //making card and store to this->recipes
+                    if (!name.empty()){
+                        if (ingre == NULL) {ingre = new StringArray();}
+                        if (steps == NULL) {steps = new StringArray();}
+
+                        this->recipes->add(new Recipe(name, ingre, steps));
+                    }
+                    else if (hasName || ingre != NULL || steps != NULL){
+                        delete ingre;
+                        delete steps;
+                    }
+
+                    //reset for the next card
+                    name = "";
+                    hasName = false;
+                    ingre = NULL;
+                    steps = NULL;
+                    continue;
+                }
+
+                if (line.compare(0, 6, "Name: ") == 0){ //name field
+                    name = line.substr(6);
+                    hasName = true;
+                }
+                else if (line.compare(0, 12, "Ingredient: ") == 0){ //ingredient field
+                    if (ingre == NULL) {ingre = new StringArray();}
+
+                    string rest = line.substr(12);
+                    int pos = 0;
+
+                    while (true){
+                        int next = rest.find(", ", pos);
+                        string token;
+
+                        if (next == (int)string::npos) {token = rest.substr(pos);}
+                        else{
+                            token = rest.substr(pos, next - pos);
+                        }
+
+                        if (!token.empty()) {ingre->add(token);}
+
+                        if (next == (int)string::npos) {break;}
+
+                        pos = next + 2;
+                    }
+                }
+                else if (line == "Step:"){ //step field - but only "Step: "
+                    if (steps == NULL) {steps = new StringArray();}
+                }
+                else{
+                    //real step line: "NN: <text>"
+                    if (steps == NULL) {steps = new StringArray();}
+
+                    int p = line.find(": ");
+
+                    if (p == (int)string::npos) {steps->add(line);}
+                    else{
+                        steps->add(line.substr(p + 2));
+                    }
+                }
+            }
+
+            //In case the file does not end with a border, finalize the last card.
+            if (!name.empty()){
+                if (ingre == NULL) {ingre = new StringArray();}
+                if (steps == NULL) {steps = new StringArray();}
+
+                this->recipes->add(new Recipe(name, ingre, steps));
+            }
+            else if (hasName || ingre != NULL || steps != NULL){
+                delete ingre;
+                delete steps;
+            }
+
+            in.close();
+            return DB_OK;
+        }
+
+        StringArray* help(){
+            StringArray* lines = new StringArray();
+
+            lines->add("Commands:");
+            lines->add("  insert <name>            add a recipe (prompts for ingredients and steps)");
+            lines->add("  edit <name>              edit a recipe (empty input keeps a field)");
+            lines->add("  del <name>               delete a recipe");
+            lines->add("  search                   list every recipe");
+            lines->add("  search -name <keyword>   search recipes by name");
+            lines->add("  search -ingre a, b, c    search recipes by ingredient");
+            lines->add("  sort name                list recipes sorted by name");
+            lines->add("  load                     reload recipes from the file");
+            lines->add("  save                     save recipes to the file");
+            lines->add("  help                     show this help");
+            lines->add("  exit                     quit");
+
+            return lines;
         }
 };

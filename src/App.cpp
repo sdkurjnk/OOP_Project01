@@ -6,321 +6,564 @@
 #include "DB.cpp"
 #include "Recipe.cpp"
 #include "RecipeArray.cpp"
+#include "StringArray.cpp"
 
 using namespace std;
 
 class App
 {
     private:
-        string filePath;
-        DB* db;
+        DB *db;
 
-        void commandParser(string command);
+        string trim(string s){
+            int start = 0;
 
-        void print_recipe(RecipeArray* recipe);
-
-    public:
-        App(DB* db, string filePath);
-
-        void run();
-};
-
-App::App(DB* database, string path)
-    :filePath(path), db(database)
-    {
-    }
-
-void App::run(){
-    string command;
-
-    while(true){
-        cout << ">>> ";
-
-        if(!getline(cin, command)){
-            break;
-        }
-
-        if (command == "exit"){
-            break;
-        }
-
-        if (command == ""){
-            continue;
-        }
-
-        commandParser(command);
-    }
-}
-
-void App::commandParser(string command){
-    string action;
-    string argument;
-
-    size_t pos = command.find(' ');
-
-    if (pos == string::npos){
-        action = command;
-    }
-    else{
-        action = command.substr(0, pos);
-        argument = command.substr(pos + 1);
-    }
-
-    if (action == "insert"){
-        // when there is blank space in front of the argument.
-        size_t start = 0;
-
-        while (start < argument.length()){
-            if (argument[start] != ' ' && argument[start] != '\t'){
-                break;
-            }
-
-            start++;
-        }
-
-        argument = argument.substr(start);
-
-        // when there is blank space in the back of the argument.
-        size_t end = argument.length();
-
-        while (end > 0){
-            if (argument[end - 1] != ' ' && argument[end -1] != '\t'){
-                break;
-            }
-
-            end--;
-        }
-
-        argument = argument.substr(0, end);
-
-        // when the argument is empty.
-        if (argument.empty()){
-            cout << "Please enter a recipe name." << endl;
-            return;
-        }
-
-        // when the argument is not empty.
-        string ingredientLine;
-
-        cout << "Ingredients: ";
-
-        if (!getline(cin, ingredientLine)){
-            return;
-        }
-
-        if (!ingredientLine.empty()){
-            if (ingredientLine[ingredientLine.length() - 1] == ','){
-                cout << "Ingredient names cannot be empty." << endl;
-                return;
-            }
-        }
-
-        istringstream ingredientStream(ingredientLine);
-        string ingredient;
-        int ingredientCount = 0;
-
-        while (getline(ingredientStream, ingredient, ',')){
-            ingredientCount++;
-        }
-
-        if (ingredientCount == 0){
-            cout << "Please enter at least one ingredient." << endl;
-            return;
-        }
-
-        // allocate memory for the ingredients array.
-        string* ingredients = new string[ingredientCount];
-        istringstream ingredientReader(ingredientLine);
-
-        for (int i = 0; i < ingredientCount; i++){
-            getline(ingredientReader, ingredients[i], ',');
-
-            size_t start = 0;
-
-            while (start < ingredients[i].length()){
-                if (ingredients[i][start] != ' ' && ingredients[i][start] != '\t'){
-                    break;
-                }
+            while (start < (int)s.length()){
+                if (s[start] != ' ' && s[start] != '\t') {break;}
 
                 start++;
             }
 
-            ingredients[i] = ingredients[i].substr(start);
+            s = s.substr(start);
 
-            size_t end = ingredients[i].length();
+            int end = s.length();
 
             while (end > 0){
-                if (ingredients[i][end - 1] != ' ' && ingredients[i][end - 1] != '\t'){
-                    break;
-                }
+                if (s[end - 1] != ' ' && s[end - 1] != '\t') {break;}
 
                 end--;
+            }
+
+            return s.substr(0, end);
+        }
+
+        string stripQuotes(string s){
+            int length = s.length();
+
+            if (length >= 2 && s[0] == '"' && s[length - 1] == '"'){
+                return s.substr(1, length - 2);
+            }
+
+            return s;
+        }
+
+        StringArray* commandParser(string command){
+            StringArray *tokens = new StringArray();
+
+            string action;
+            string rest;
+
+            int pos = command.find(' ');
+
+            if (pos == (int)string::npos) {action = command;}
+            else{
+                action = command.substr(0, pos);
+                rest = command.substr(pos + 1);
+            }
+
+            tokens->add(action);
+
+            if (action == "insert" || action == "edit" || action == "del"){
+                // The whole remainder is the recipe name (spaces allowed).
+                string name = trim(rest);
+
+                if (!name.empty()) {tokens->add(name);}
+            }
+            else if (action == "sort"){
+                // sort <key> [asc|desc]
+                istringstream sortStream(rest);
+                string key;
+                sortStream >> key;
+
+                if (!key.empty()){
+                    tokens->add(key);
+
+                    string direction;
+                    sortStream >> direction;
+
+                    if (!direction.empty()) {tokens->add(direction);}
                 }
+            }
+            else if (action == "search") {
+                istringstream searchStream(rest);
+                string option;
+                searchStream >> option;
 
-                ingredients[i] = ingredients[i].substr(0, end);
+                if (!option.empty()) {
+                    tokens->add(option);
 
-                if (ingredients[i].empty()){
-                    cout << "Ingredient names cannot be empty." << endl;
-                    delete[] ingredients;
+                    // Everything after the option word.
+                    string after;
+                    getline(searchStream, after);
+                    after = trim(after);
+
+                    if (option == "-name"){
+                        after = stripQuotes(after);
+
+                        if (!after.empty()) {tokens->add(after);}
+                    }
+                    else if (option == "-ingre"){
+                        // Split the remainder into ingredients by comma.
+                        istringstream ingredientReader(after);
+                        string ingredient;
+
+                        while (getline(ingredientReader, ingredient, ',')){
+                            ingredient = trim(ingredient);
+
+                            if (!ingredient.empty()) {tokens->add(ingredient);}
+                        }
+                    }
+                }
+            }
+
+            return tokens;
+        }
+
+        void commandCaller(StringArray *tokens)
+        {
+            string action = tokens->get(0);
+
+            if (action == "insert")      {handleInsert(tokens);}
+            else if (action == "search") {handleSearch(tokens);}
+            else if (action == "sort")   {handleSort(tokens);}
+            else if (action == "edit")   {handleEdit(tokens);}
+            else if (action == "del")    {handleDel(tokens);}
+            else if (action == "load")   {handleLoad();}
+            else if (action == "save")   {handleSave();}
+            else if (action == "help")   {handleHelp();}
+            else {cout << "ERROR: Unsupported command." << endl;}
+        }
+
+        void handleInsert(StringArray *tokens){
+            if (tokens->size() < 2){
+                cout << "ERROR: Please enter a recipe name." << endl;
+                return;
+            }
+
+            string name = tokens->get(1);
+
+            string ingredientLine;
+
+            cout << "Ingredients: ";
+
+            if (!getline(cin, ingredientLine)) {return;}
+
+            if (!ingredientLine.empty()){
+                if (ingredientLine[ingredientLine.length() - 1] == ','){
+                    cout << "ERROR: Ingredient names cannot be empty." << endl;
                     return;
                 }
             }
 
+            StringArray *ingredients = new StringArray();
+            istringstream ingredientReader(ingredientLine);
+            string ingredient;
 
-        string stepText; // save all the steps
-        string stepLine; // save one line of the step
-        int stepCount = 0; // count the number of steps
+            while (getline(ingredientReader, ingredient, ',')){
+                ingredient = trim(ingredient);
 
-        cout << "Enter recipe steps (enter '0' to finish): " << endl;
+                if (ingredient.empty()){
+                    cout << "ERROR: Ingredient names cannot be empty." << endl;
+                    delete ingredients;
+                    return;
+                }
 
-        while (true) {
-            if (!getline(cin, stepLine)) {
-                delete[] ingredients;
+                ingredients->add(ingredient);
+            }
+
+            if (ingredients->size() == 0){
+                cout << "ERROR: Please enter at least one ingredient." << endl;
+                delete ingredients;
                 return;
             }
 
-            if (stepLine == "0"){ // finish inputting steps
-                break;
+            StringArray *steps = new StringArray();
+            string stepLine;
+
+            cout << "Enter recipe steps (enter '0' to finish):" << endl;
+
+            while (true){
+                if (!getline(cin, stepLine)){
+                    delete steps;
+                    delete ingredients;
+                    return;
+                }
+
+                if (stepLine == "0") {break;}
+
+                steps->add(stepLine);
             }
 
-            stepText += stepLine + "\n";
-            stepCount++;
+            StringArray *previewIngredients = new StringArray();
+            StringArray *previewSteps = new StringArray();
+
+            for (int i = 0; i < ingredients->size(); i++){
+                previewIngredients->add(ingredients->get(i));
+            }
+
+            for (int i = 0; i < steps->size(); i++){
+                previewSteps->add(steps->get(i));
+            }
+
+            Recipe preview(name, previewIngredients, previewSteps);
+            RecipeArray previewList;
+
+            previewList.add(&preview);
+            print_recipe(&previewList);
+
+            string answer;
+            bool saveRequested = false;
+
+            while (true){
+                cout << "Save this recipe? [Y/N] : ";
+
+                if (!getline(cin, answer)) {break;}
+
+                if (answer == "Y" || answer == "y"){
+                    saveRequested = true;
+                    break;
+                }
+
+                if (answer == "N" || answer == "n") {break;}
+
+                cout << "Please enter Y or N." << endl;
+            }
+
+            if (saveRequested){
+                // db->add owns ingredients/steps from here (and frees them on failure).
+                DBResult result = db->add(name, ingredients, steps);
+
+                if (result == DB_OK) {cout << "INFO: Recipe saved." << endl;}
+                else if (result == DB_DUPLICATE){
+                    cout << "ERROR: A recipe with that name already exists." << endl;
+                }
+                else {cout << "ERROR: Recipe was not saved." << endl;}
+            }
+            else{
+                delete steps;
+                delete ingredients;
+                cout << "INFO: Recipe was not saved." << endl;
+            }
         }
 
-        string* steps = new string[stepCount];
-        istringstream stepReader(stepText);
+        void handleSearch(StringArray *tokens){
+            if (tokens->size() == 1){
+                // No keyword: list every recipe (ordered by name ascending).
+                show_results(db->order(0), "Search failed.");
+                return;
+            }
 
-        for (int i = 0; i < stepCount; i++){
-            getline(stepReader, steps[i]);
+            string option = tokens->get(1);
+
+            if (option == "-name"){
+                if (tokens->size() < 3){
+                    cout << "ERROR: Please enter a search keyword." << endl;
+                    return;
+                }
+
+                show_results(db->search(tokens->get(2)), "Search failed.");
+            }
+            else if (option == "-ingre"){
+                if (tokens->size() < 3){
+                    cout << "ERROR: Please enter a search keyword." << endl;
+                    return;
+                }
+
+                StringArray ingredients;
+
+                for (int i = 2; i < tokens->size(); i++){
+                    ingredients.add(tokens->get(i));
+                }
+
+                show_results(db->search(&ingredients), "Search failed.");
+            }
+            else{cout << "ERROR: Unsupported search option." << endl;}
         }
 
-        cout << "================================" << endl;
-        cout << "Name: " << argument << endl;
+        void handleSort(StringArray *tokens){
+            if (tokens->size() < 2){
+                cout << "ERROR: Please enter a sort option." << endl;
+                return;
+            }
 
-        cout << "Ingredients: " << endl;
+            string key = tokens->get(1);
 
-        for (int i = 0; i < ingredientCount; i++){
-            cout << "- " << ingredients[i] << endl;
+            if (key != "name"){
+                cout << "ERROR: Unsupported sort option." << endl;
+                return;
+            }
+
+            int option = 0; // ascending by default
+
+            if (tokens->size() >= 3){
+                string direction = tokens->get(2);
+
+                if (direction == "desc") {option = 1;}
+                else if (direction == "asc") {option = 0;}
+                else{
+                    cout << "ERROR: Unsupported sort option." << endl;
+                    return;
+                }
+            }
+
+            show_results(db->order(option), "Sort failed.");
         }
 
-        cout << "Steps: " << endl;
+        void handleEdit(StringArray *tokens){
+            if (tokens->size() < 2){
+                cout << "ERROR: Please enter a recipe name." << endl;
+                return;
+            }
 
-        for (int i = 0; i < stepCount; i++){
-            cout << i + 1 << ". " << steps[i] << endl;
-        }
+            string name = tokens->get(1);
 
-        cout << "================================" << endl;
+            // Empty input keeps the current field.
+            cout << "New name (leave empty to keep): ";
+            string newName;
 
-        string answer;
-        bool saveRequested = false;
+            if (!getline(cin, newName)) {return;}
 
-        while (true){
-            cout << "Save this recipe? [Y/N] : ";
+            newName = trim(newName);
+
+            cout << "New ingredients (comma-separated, leave empty to keep): ";
+            string ingredientLine;
+
+            if (!getline(cin, ingredientLine)) {return;}
+
+            StringArray *newIngre = NULL;
+            string trimmedIngre = trim(ingredientLine);
+
+            if (!trimmedIngre.empty()){
+                if (trimmedIngre[trimmedIngre.length() - 1] == ','){
+                    cout << "ERROR: Ingredient names cannot be empty." << endl;
+                    return;
+                }
+
+                newIngre = new StringArray();
+                istringstream ingredientReader(ingredientLine);
+                string ingredient;
+
+                while (getline(ingredientReader, ingredient, ',')){
+                    ingredient = trim(ingredient);
+
+                    if (ingredient.empty()){
+                        cout << "ERROR: Ingredient names cannot be empty." << endl;
+                        delete newIngre;
+                        return;
+                    }
+
+                    newIngre->add(ingredient);
+                }
+            }
+
+            StringArray *newStep = NULL;
+            string answer;
+
+            cout << "Replace steps? [Y/N] : ";
 
             if (!getline(cin, answer)){
-                break;
+                delete newIngre;
+                return;
             }
 
             if (answer == "Y" || answer == "y"){
-                saveRequested = true;
-                break;
-            }
+                newStep = new StringArray();
+                string stepLine;
 
-            if (answer == "N" || answer == "n"){
-                break;
-            }
+                cout << "Enter recipe steps (enter '0' to finish):" << endl;
 
-            cout << "Please enter Y or N." << endl;
-        }
+                while (true){
+                    if (!getline(cin, stepLine)){
+                        delete newStep;
+                        delete newIngre;
+                        return;
+                    }
 
-        if (saveRequested){
-            // save the recipe to the database
-            // 보류.
-        }
+                    if (stepLine == "0") {break;}
 
-        delete[] steps;
-        delete[] ingredients; 
-    }
-
-    else if (action == "search"){
-        string searchOption;
-        string searchKeyword;
-
-        istringstream searchStream(argument);
-        searchStream >> searchOption;
-
-        if (searchOption.empty()){
-            // 전체 조회?
-            // DB 전체 조회 요청 및 결과 출력
-        }
-        else if (searchOption == "-name" || searchOption == "-ingre"){
-            getline(searchStream, searchKeyword);
-
-            size_t start = 0;
-
-            while (start < searchKeyword.length()){
-                if (searchKeyword[start] != ' ' && searchKeyword[start] != '\t'){
-                    break;
+                    newStep->add(stepLine);
                 }
-
-                start++;
             }
 
-            searchKeyword = searchKeyword.substr(start);
+            // db->edit owns newIngre/newStep from here (and frees them on failure).
+            DBResult result = db->edit(name, newName, newIngre, newStep);
 
-            size_t end = searchKeyword.length();
-
-            while (end > 0){
-                if (searchKeyword[end - 1] != ' ' && searchKeyword[end - 1] != '\t'){
-                    break;
-                }
-
-                end--;
+            if (result == DB_OK) {cout << "INFO: Recipe updated." << endl;}
+            else if (result == DB_NOT_FOUND){
+                cout << "ERROR: No recipe with that name." << endl;
             }
+            else if (result == DB_EMPTY_NAME){
+                cout << "ERROR: Please enter a recipe name." << endl;
+            }
+            else {cout << "ERROR: Edit failed." << endl;}
+        }
 
-            searchKeyword = searchKeyword.substr(0, end);
-
-            if (searchKeyword.empty()){
-                cout << "Please enter a search keyword." << endl;
+        void handleDel(StringArray *tokens){
+            if (tokens->size() < 2){
+                cout << "ERROR: Please enter a recipe name." << endl;
                 return;
             }
 
-            size_t length = searchKeyword.length();
+            string name = tokens->get(1);
 
-            if (length >= 2){
-                if (searchKeyword[0] == '"' && searchKeyword[length - 1] == '"'){
-                    searchKeyword = searchKeyword.substr(1, length - 2);
+            string answer;
+            bool deleteRequested = false;
+
+            while (true){
+                cout << "Delete this recipe? [Y/N] : ";
+
+                if (!getline(cin, answer)) {return;}
+
+                if (answer == "Y" || answer == "y"){
+                    deleteRequested = true;
+                    break;
                 }
+
+                if (answer == "N" || answer == "n") {break;}
+
+                cout << "Please enter Y or N." << endl;
             }
 
-            // DB 연결 코드 들어갈 자리
-        }
-        else{
-            cout << "Unsupported search option."<< endl;
-        }
-    }
+            if (!deleteRequested){
+                cout << "INFO: Recipe was not deleted." << endl;
+                return;
+            }
 
-    else if (action == "sort"){
-        string sortOption;
+            DBResult result = db->del(name);
 
-        istringstream sortStream(argument);
-        sortStream >> sortOption;
-
-        if (sortOption.empty()){
-            cout << "Please enter a sort option." << endl;
-            return;
+            if (result == DB_OK) {cout << "INFO: Recipe deleted." << endl;}
+            else if (result == DB_NOT_FOUND){
+                cout << "ERROR: No recipe with that name." << endl;
+            }
+            else if (result == DB_EMPTY_NAME){
+                cout << "ERROR: Please enter a recipe name." << endl;
+            }
+            else {cout << "ERROR: Delete failed." << endl;}
         }
 
-        if (sortOption == "name"){
-            // DB에 이름 기준 정렬 요청
-            // 반환된 결과 출력
-        }
-        else{
-            cout << "Unsupported sort option." << endl;
-        }
-    }
+        void handleLoad(){
+            DBResult result = db->load();
 
-    else{
-        cout << "Unsupported command." << endl;
-    }
-}
+            if (result == DB_OK) {cout << "INFO: Recipes loaded." << endl;}
+            else if (result == DB_FILE_NOT_FOUND){
+                cout << "ERROR: No saved file to load." << endl;
+            }
+            else {cout << "ERROR: Load failed." << endl;}
+        }
+
+        void handleSave(){
+            DBResult result = db->save();
+
+            if (result == DB_OK) {cout << "INFO: Recipes saved." << endl;}
+            else if (result == DB_SAVE_FAILED){
+                cout << "ERROR: Could not open the file for writing." << endl;
+            }
+            else {cout << "ERROR: Save failed." << endl;}
+        }
+
+        void handleHelp(){
+            cout << "Commands:" << endl;
+            cout << "  insert <name>            add a recipe (prompts for ingredients and steps)" << endl;
+            cout << "  edit <name>              edit a recipe (empty input keeps a field)" << endl;
+            cout << "  del <name>               delete a recipe" << endl;
+            cout << "  search                   list every recipe" << endl;
+            cout << "  search -name <keyword>   search recipes by name" << endl;
+            cout << "  search -ingre a, b, c    search recipes by ingredient" << endl;
+            cout << "  sort name [asc|desc]     list recipes sorted by name" << endl;
+            cout << "  load                     reload recipes from the file" << endl;
+            cout << "  save                     save recipes to the file" << endl;
+            cout << "  help                     show this help" << endl;
+            cout << "  exit                     quit" << endl;
+        }
+
+        void print_recipe(RecipeArray *recipe){
+            for (int i = 0; i < recipe->size(); i++){
+                Recipe *current = recipe->get(i);
+                StringArray lines;
+
+                lines.add("Recipe Name: " + current->getRecipeName());
+
+                StringArray *ingredients = current->getIngredient();
+                string ingredientLine = "Ingredient: ";
+
+                for (int j = 0; j < ingredients->size(); j++){
+                    if (j > 0) { ingredientLine += ", ";}
+                    ingredientLine += ingredients->get(j);
+                }
+
+                lines.add(ingredientLine);
+
+                lines.add("Steps:");
+                StringArray *steps = current->getStep();
+
+                for (int j = 0; j < steps->size(); j++){
+                    lines.add(to_string(j + 1) + ". " + steps->get(j));
+                }
+
+                int maxLength = 0;
+
+                for (int j = 0; j < lines.size(); j++){
+                    string line = lines.get(j);
+
+                    if ((int)line.length() > maxLength) {maxLength = line.length();}
+                }
+
+                string border;
+
+                for (int j = 0; j < maxLength; j++) {border += "=";}
+
+                cout << border << endl;
+
+                for (int j = 0; j < lines.size(); j++) {cout << lines.get(j) << endl;}
+
+                cout << border << endl;
+            }
+        }
+
+        void show_results(Response *response, string failMessage){
+            if (response == NULL || response->getResult() != DB_OK){
+                cout << "ERROR: " << failMessage << endl;
+                delete response;
+                return;
+            }
+
+            RecipeArray *results = response->getArray();
+
+            cout << "Total " << results->size() << " results:" << endl;
+            print_recipe(results);
+            delete response;
+        }
+
+    public:
+        App(DB *database){
+            this->db = database;
+        }
+
+        void run(){
+            cout << " ___   ___   _  __  _   _ " << endl;
+            cout << "|_ _| |_ _| | |/ / | | | |" << endl;
+            cout << " | |   | |  | ' /  | |_| |" << endl;
+            cout << " | |   | |  | . \\  |  _  |" << endl;
+            cout << "|___| |___| |_|\\_\\ |_| |_|" << endl;
+            cout << endl;
+            cout << "The Interactive Intelligent Kitchen Helper" << endl;
+            cout << "Enter 'help' to see the commands." << endl;
+            cout << endl;
+
+            string command;
+
+            while (true){
+                cout << ">>> ";
+
+                if (!getline(cin, command)) {break;}
+
+                if (command == "exit") {break;}
+
+                if (command == "") {continue;}
+
+                StringArray *tokens = commandParser(command);
+                commandCaller(tokens);
+                delete tokens;
+            }
+        }
+};

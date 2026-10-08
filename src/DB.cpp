@@ -6,18 +6,47 @@
 
 using namespace std;
 
+enum DBResult {
+    DB_OK = 0,         // success
+    DB_EMPTY_NAME,     // recipe name was empty
+    DB_NULL_ARG,       // a required array argument was NULL
+    DB_NOT_FOUND,      // no recipe matched the given name
+    DB_BAD_OPTION,     // order: option was not a valid value
+    DB_DUPLICATE,      // add: a recipe with that name already exists
+    DB_SAVE_FAILED,    // save: could not open the file for writing
+    DB_FILE_NOT_FOUND  // load: file did not exist (started with empty DB)
+};
+
+class Response
+{
+    private:
+        RecipeArray* recipeArray;
+        DBResult responseResult;
+
+    public:
+        Response(RecipeArray* array, DBResult result){
+            this->recipeArray = array;
+            this->responseResult = result;
+        }
+
+        ~Response() {delete this->recipeArray;}
+
+        RecipeArray* getArray() {return this->recipeArray;}
+        DBResult getResult() {return this->responseResult;}
+};
+
 class DB
 {
     public:
         virtual ~DB() {}
 
-        virtual RecipeArray* search(string name) = 0;  // Overloading
-        virtual RecipeArray* search(StringArray* ingre) = 0; // Overloading
-        virtual RecipeArray* order(int option) = 0;
+        virtual Response* search(string name) = 0;  // Overloading
+        virtual Response* search(StringArray* ingre) = 0; // Overloading
+        virtual Response* order(int option) = 0;
 
-        virtual void edit(string name, string newName, StringArray* newIngredient, StringArray* newStep) = 0;
-        virtual void add(string name, StringArray* ingredient, StringArray* step) = 0;
-        virtual void del(string name) = 0;
-
-        virtual void load() = 0;
+        virtual DBResult edit(string name, string newName, StringArray* newIngre, StringArray* newStep) = 0;
+        virtual DBResult add(string name, StringArray* ingre, StringArray* step) = 0;
+        virtual DBResult del(string name) = 0;
+        virtual DBResult save() = 0;
+        virtual DBResult load() = 0;
 };

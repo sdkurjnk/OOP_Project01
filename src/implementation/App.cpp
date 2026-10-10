@@ -5,6 +5,38 @@
 
 using namespace std;
 
+App::App(DB *database){
+    this->db = database;
+}
+
+void App::run(){
+    cout << " ___   ___   _  __  _   _ " << endl;
+    cout << "|_ _| |_ _| | |/ / | | | |" << endl;
+    cout << " | |   | |  | ' /  | |_| |" << endl;
+    cout << " | |   | |  | . \\  |  _  |" << endl;
+    cout << "|___| |___| |_|\\_\\ |_| |_|" << endl;
+    cout << endl;
+    cout << "The Interactive Intelligent Kitchen Helper" << endl;
+    cout << "Enter 'help' to see the commands." << endl;
+    cout << endl;
+
+    string command;
+
+    while (true){
+        cout << ">>> ";
+
+        if (!getline(cin, command)) {break;}
+
+        if (command == "exit") {break;}
+
+        if (command == "") {continue;}
+
+        StringArray *tokens = commandParser(command);
+        commandCaller(tokens);
+        delete tokens;
+    }
+}
+
 string App::trim(string s){
     int start = 0;
 
@@ -522,36 +554,4 @@ void App::show_results(Response *response, string failMessage){
     cout << "Total " << results->size() << " results:" << endl;
     print_recipe(results);
     delete response;
-}
-
-App::App(DB *database){
-    this->db = database;
-}
-
-void App::run(){
-    cout << " ___   ___   _  __  _   _ " << endl;
-    cout << "|_ _| |_ _| | |/ / | | | |" << endl;
-    cout << " | |   | |  | ' /  | |_| |" << endl;
-    cout << " | |   | |  | . \\  |  _  |" << endl;
-    cout << "|___| |___| |_|\\_\\ |_| |_|" << endl;
-    cout << endl;
-    cout << "The Interactive Intelligent Kitchen Helper" << endl;
-    cout << "Enter 'help' to see the commands." << endl;
-    cout << endl;
-
-    string command;
-
-    while (true){
-        cout << ">>> ";
-
-        if (!getline(cin, command)) {break;}
-
-        if (command == "exit") {break;}
-
-        if (command == "") {continue;}
-
-        StringArray *tokens = commandParser(command);
-        commandCaller(tokens);
-        delete tokens;
-    }
 }

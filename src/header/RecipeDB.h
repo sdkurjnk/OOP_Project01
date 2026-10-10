@@ -10,15 +10,6 @@ using namespace std;
 
 class RecipeDB : public DB
 {
-    private:
-        RecipeArray* recipes;
-        string filePath;
-
-        int findIndex(string name);
-        string pad2(int number);
-        string makeBorder(int width);
-        bool isBorder(string line);
-
     public:
         RecipeDB(string filePath);
         ~RecipeDB();
@@ -36,4 +27,13 @@ class RecipeDB : public DB
         // persistence
         DBResult save();
         DBResult load();
+
+    private:
+        RecipeArray* recipes;
+        string filePath;
+
+        int findIndex(string name);
+        string pad2(int number);
+        string makeBorder(int width);
+        bool isBorder(string line);
 };

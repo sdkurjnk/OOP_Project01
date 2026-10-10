@@ -6,10 +6,6 @@ using namespace std;
 
 class RecipeArray
 {
-    private:
-        Recipe** recipe; //array of Recipe instances
-        int count;
-
     public:
         RecipeArray();
         ~RecipeArray();
@@ -17,4 +13,8 @@ class RecipeArray
         void add(Recipe* item);
         int size();
         Recipe* get(int index);
+
+    private:
+        Recipe** recipe; //array of Recipe instances
+        int count;
 };

@@ -6,10 +6,6 @@ using namespace std;
 
 class StringArray
 {
-    private:
-        string* str; //Array of string values
-        int count;
-
     public:
         StringArray();
         ~StringArray();
@@ -17,4 +13,8 @@ class StringArray
         void add(string item);
         int size();
         string get(int index);
+
+    private:
+        string* str; //Array of string values
+        int count;
 };

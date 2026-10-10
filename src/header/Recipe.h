@@ -7,11 +7,6 @@ using namespace std;
 
 class Recipe
 {
-    private:
-        string recipeName;
-        StringArray* ingredient;
-        StringArray* step;
-
     public:
         Recipe(string name, StringArray* ingredient, StringArray* step);
         ~Recipe();
@@ -22,4 +17,9 @@ class Recipe
         void setIngredient(StringArray* newIngre);
         StringArray* getStep();
         void setStep(StringArray* newStep);
+
+    private:
+        string recipeName;
+        StringArray* ingredient;
+        StringArray* step;
 };

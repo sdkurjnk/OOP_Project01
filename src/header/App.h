@@ -10,6 +10,10 @@ using namespace std;
 
 class App
 {
+    public:
+        App(DB *database);
+        void run();
+
     private:
         DB *db;
 
@@ -29,8 +33,4 @@ class App
 
         void print_recipe(RecipeArray *recipe);
         void show_results(Response *response, string failMessage);
-
-    public:
-        App(DB *database);
-        void run();
 };

@@ -19,16 +19,16 @@ enum DBResult {
 
 class Response
 {
-    private:
-        RecipeArray* recipeArray;
-        DBResult responseResult;
-
     public:
         Response(RecipeArray* array, DBResult result);
         ~Response();
 
         RecipeArray* getArray();
         DBResult getResult();
+
+    private:
+        RecipeArray* recipeArray;
+        DBResult responseResult;
 };
 
 class DB

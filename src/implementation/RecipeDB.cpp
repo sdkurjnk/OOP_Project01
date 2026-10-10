@@ -6,46 +6,6 @@
 using namespace std;
 
 // -------------------------------------------------------------------
-// private helpers
-// -------------------------------------------------------------------
-
-int RecipeDB::findIndex(string name){
-    for (int i = 0; i < this->recipes->size(); i++){
-        if (this->recipes->get(i)->getRecipeName() == name) {return i;}
-    }
-
-    return -1;
-}
-
-string RecipeDB::pad2(int number){
-    string s = to_string(number);
-
-    if (s.length() < 2) {s = "0" + s;}
-
-    return s;
-}
-
-string RecipeDB::makeBorder(int width){
-    string bar = "";
-
-    for (int i = 0; i < width; i++){
-        bar += "=";
-    }
-
-    return bar;
-}
-
-bool RecipeDB::isBorder(string line){
-    if (line.empty()) {return false;}
-
-    for (int i = 0; i < (int)line.length(); i++){
-        if (line[i] != '=') {return false;}
-    }
-
-    return true;
-}
-
-// -------------------------------------------------------------------
 // construction
 // -------------------------------------------------------------------
 
@@ -415,4 +375,44 @@ DBResult RecipeDB::load(){
 
     in.close();
     return DB_OK;
+}
+
+// -------------------------------------------------------------------
+// private helpers
+// -------------------------------------------------------------------
+
+int RecipeDB::findIndex(string name){
+    for (int i = 0; i < this->recipes->size(); i++){
+        if (this->recipes->get(i)->getRecipeName() == name) {return i;}
+    }
+
+    return -1;
+}
+
+string RecipeDB::pad2(int number){
+    string s = to_string(number);
+
+    if (s.length() < 2) {s = "0" + s;}
+
+    return s;
+}
+
+string RecipeDB::makeBorder(int width){
+    string bar = "";
+
+    for (int i = 0; i < width; i++){
+        bar += "=";
+    }
+
+    return bar;
+}
+
+bool RecipeDB::isBorder(string line){
+    if (line.empty()) {return false;}
+
+    for (int i = 0; i < (int)line.length(); i++){
+        if (line[i] != '=') {return false;}
+    }
+
+    return true;
 }

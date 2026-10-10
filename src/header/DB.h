@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include "RecipeArray.cpp"
-#include "StringArray.cpp"
+#include "RecipeArray.h"
+#include "StringArray.h"
 
 using namespace std;
 
@@ -19,20 +19,16 @@ enum DBResult {
 
 class Response
 {
+    public:
+        Response(RecipeArray* array, DBResult result);
+        ~Response();
+
+        RecipeArray* getArray();
+        DBResult getResult();
+
     private:
         RecipeArray* recipeArray;
         DBResult responseResult;
-
-    public:
-        Response(RecipeArray* array, DBResult result){
-            this->recipeArray = array;
-            this->responseResult = result;
-        }
-
-        ~Response() {delete this->recipeArray;}
-
-        RecipeArray* getArray() {return this->recipeArray;}
-        DBResult getResult() {return this->responseResult;}
 };
 
 class DB

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include "RecipeArray.cpp"
-#include "StringArray.cpp"
+#include "RecipeArray.h"
+#include "StringArray.h"
 
 using namespace std;
 
@@ -24,15 +24,11 @@ class Response
         DBResult responseResult;
 
     public:
-        Response(RecipeArray* array, DBResult result){
-            this->recipeArray = array;
-            this->responseResult = result;
-        }
+        Response(RecipeArray* array, DBResult result);
+        ~Response();
 
-        ~Response() {delete this->recipeArray;}
-
-        RecipeArray* getArray() {return this->recipeArray;}
-        DBResult getResult() {return this->responseResult;}
+        RecipeArray* getArray();
+        DBResult getResult();
 };
 
 class DB
